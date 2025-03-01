@@ -1,3 +1,4 @@
 flask
 deepgram-sdk
 python-dotenv
+openai

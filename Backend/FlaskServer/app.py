@@ -1,43 +1,51 @@
 from flask import Flask, request, send_file
-from deepgram import DeepgramClient, SpeakOptions
 from dotenv import load_dotenv
 import os
 
+from text_to_speech import create_audio
+from speech_to_text import transcribe_audio
+
+# loading env vars
+load_dotenv()
+
 app = Flask(__name__, static_folder='static')
 
-# deepgram client
-dg_client = DeepgramClient(os.getenv('DEEPGRAM_API_KEY'))
-options = SpeakOptions(model="aura-asteria-en")
-
+TTS_FOLDER = os.path.join(app.root_path, 'static/tts')
+STT_FOLDER = os.path.join(app.root_path, 'static/stt')
 
 @app.route('/index')
 def index():
     return 'Hello World'
 
-
-# Text-to-Speech
-def create_audio(text):
-    try:
-        audio_folder = os.path.join(app.static_folder, 'audio')
-        
-        # make dir if not exists
-        if not os.path.exists(audio_folder):
-            os.makedirs(audio_folder)
-        
-        filename = os.path.join(app.static_folder, audio_folder, "output.mp3")
-        dg_client.speak.v("1").save(filename, {"text":text}, options)
-        return filename
-    
-    except Exception as e:
-        raise ValueError(f"Speech synthesis failed: {str(e)}")
-
 @app.route('/text_to_speech', methods=['POST'])
 def text_to_speech():
-    print("first")
     text = request.form['text']
     try:
-        audio_file = create_audio(text)
+        audio_file = create_audio(app, text)
         return send_file(audio_file, as_attachment=True)
+    except ValueError as e:
+        return str(e), 500
+    
+@app.route('/speech_to_text', methods=["POST"])
+def speech_to_text():
+    try:
+        if 'audio' not in request.files:
+            return 'No file part', 400
+        
+        # make dir if not exists
+        if not os.path.exists(STT_FOLDER):
+            os.makedirs(STT_FOLDER)
+
+        file = request.files['audio']
+        if file.filename == '':
+            return 'No selected file', 400
+        
+        # we need to upload file before we can pass it to whisper
+        filepath = os.path.join(STT_FOLDER, file.filename)
+        file.save(filepath)
+        
+        text = transcribe_audio(filepath)
+        return text
     except ValueError as e:
         return str(e), 500
 
