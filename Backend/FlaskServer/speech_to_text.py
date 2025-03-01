@@ -9,10 +9,11 @@ client = OpenAI(
 )
 
 def transcribe_audio(filepath):
+    audio_file = open(filepath, "rb")
     try:    
         transcription = client.audio.transcriptions.create(
             model="whisper-1",
-            file=filepath
+            file=audio_file
         )
         return transcription.text
     except Exception as e:
