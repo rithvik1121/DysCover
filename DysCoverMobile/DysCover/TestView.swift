@@ -1,24 +1,69 @@
 import SwiftUI
+import AVFoundation  // For audio playback
 
-
-// MARK: - Backend Manager
 class BackendManager {
     static let baseURL = "http://192.168.1.213:8443"
     
+    // Generic GET request for retrieving data (e.g., audio files)
+    static func getRequest(route: String, completion: @escaping (Data?) -> Void) {
+        guard let url = URL(string: baseURL + route) else {
+            completion(nil)
+            return
+        }
+        var request = URLRequest(url: url)
+        request.httpMethod = "GET"
+        
+        URLSession.shared.dataTask(with: request) { data, response, error in
+            if let error = error {
+                print("GET request error (\(route)): \(error)")
+                completion(nil)
+                return
+            }
+            completion(data)
+        }.resume()
+    }
+
+    // ✅ Fix: Add this `postRequest` function for submitting answers or starting tests
+    static func postRequest(route: String, payload: [String: Any], completion: @escaping (Bool) -> Void) {
+        guard let url = URL(string: baseURL + route) else {
+            completion(false)
+            return
+        }
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        do {
+            request.httpBody = try JSONSerialization.data(withJSONObject: payload, options: [])
+            request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        } catch {
+            print("Error serializing JSON for \(route): \(error)")
+            completion(false)
+            return
+        }
+        URLSession.shared.dataTask(with: request) { data, response, error in
+            if let error = error {
+                print("POST request error (\(route)): \(error)")
+                completion(false)
+                return
+            }
+            completion(true)
+        }.resume()
+    }
+
+    // ✅ Fix: Add `fetchAudio` method (fetches an audio file from the backend)
     static func fetchAudio(route: String, completion: @escaping (Data?) -> Void) {
         guard let url = URL(string: baseURL + route) else {
             completion(nil)
             return
         }
         var request = URLRequest(url: url)
-        request.httpMethod = "POST"
+        request.httpMethod = "GET"
+        
         URLSession.shared.dataTask(with: request) { data, response, error in
             if let error = error {
                 print("Error fetching audio from \(route): \(error)")
                 completion(nil)
                 return
             }
-            print("Audio fetched from \(route)")
             completion(data)
         }.resume()
     }
@@ -40,24 +85,26 @@ class BackendManager {
         }
         URLSession.shared.dataTask(with: request) { data, response, error in
             if let error = error {
-                print("Error submitting answer to \(route): \(error)")
+                print("POST request error (\(route)): \(error)")
                 completion(false)
                 return
             }
-            print("Answer submitted to \(route)")
             completion(true)
         }.resume()
     }
+
 }
+
+
 
 // MARK: - Reusable CardView with Warm Off-White Background
 struct CardView<Content: View>: View {
     let content: Content
     init(@ViewBuilder content: () -> Content) {
-         self.content = content()
+        self.content = content()
     }
     var body: some View {
-         content
+        content
             .padding()
             .background(Color(hex: "#FFFDE7").opacity(0.9))
             .cornerRadius(16)
@@ -75,6 +122,66 @@ struct StepIndicatorView: View {
                 Circle()
                     .fill(index <= current ? Color(hex: "#FBC02D") : Color(hex: "#FFF59D"))
                     .frame(width: 12, height: 12)
+            }
+        }
+    }
+}
+
+// MARK: - StartTestView
+struct StartTestView: View {
+    @State private var username: String = ""
+    @State private var navigateToTest = false
+    
+    var body: some View {
+        NavigationView {
+            ZStack {
+                // Warm gradient background
+                LinearGradient(
+                    gradient: Gradient(colors: [Color(hex: "#FFF9C4"), Color(hex: "#FFD54F")]),
+                    startPoint: .topLeading,
+                    endPoint: .bottomTrailing
+                )
+                .ignoresSafeArea()
+                
+                VStack(spacing: 40) {
+                    Text("Welcome to the Dyslexia Test")
+                        .font(.largeTitle)
+                        .fontWeight(.bold)
+                        .foregroundColor(Color(hex: "#F57F17"))
+                        .multilineTextAlignment(.center)
+                        .padding(.top, 40)
+                    
+                    TextField("Enter your username", text: $username)
+                        .padding()
+                        .background(Color(hex: "#FFFDE7").opacity(0.8))
+                        .cornerRadius(8)
+                        .padding(.horizontal)
+                    
+                    Button("Start Test") {
+                        startTest()
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .tint(Color(hex: "#FBC02D"))
+                    
+                    NavigationLink(destination: TestView(), isActive: $navigateToTest) {
+                        EmptyView()
+                    }
+                }
+            }
+            .navigationBarHidden(true)
+        }
+    }
+    
+    func startTest() {
+        let payload = ["username": username]
+        BackendManager.postRequest(route: "/start", payload: payload) { success in
+            if success {
+                print("Test started for \(username)")
+                DispatchQueue.main.async {
+                    navigateToTest = true
+                }
+            } else {
+                print("Failed to start test.")
             }
         }
     }
@@ -110,7 +217,7 @@ struct TestView: View {
                 
                 Spacer()
                 
-                // Display the current section within a CardView.
+                // Display the current section
                 Group {
                     if currentSection == 1 {
                         ComprehensionSectionView(currentSection: $currentSection)
@@ -135,33 +242,53 @@ struct TestView: View {
 // MARK: - Section 1: Comprehension
 struct ComprehensionSectionView: View {
     @Binding var currentSection: Int
+    
+    // For "Question One"
     @State private var typedAnswer: String = ""
+    @State private var player: AVAudioPlayer?
+    @State private var isAudioFetched = false
+    @State private var isLoadingAudio = false
+    
+    // For "Letter Discrimination"
     @State private var selectedLetter: String? = nil
     
     var body: some View {
         ScrollView {
             VStack(spacing: 20) {
-                // Part 1: Audio Comprehension
+                // Part 1: Audio Comprehension (Question 1)
                 CardView {
                     VStack(alignment: .leading, spacing: 12) {
-                        Text("Listen & Type")
+                        Text("Question 1: Listen & Answer")
                             .font(.headline)
                             .foregroundColor(Color(hex: "#F57F17"))
-                        Text("Tap below, listen carefully, then type what you hear.")
+                        Text("Tap 'Fetch Audio', then 'Play Audio' to hear the question. Type your answer below.")
                             .font(.subheadline)
                             .foregroundColor(Color(hex: "#F9A825"))
-                        Button(action: playComprehensionAudio) {
-                            Label("Play Audio", systemImage: "play.circle.fill")
-                                .font(.title2)
-                                .foregroundColor(.white)
-                                .padding()
-                                .background(Color(hex: "#FFB74D"))
-                                .cornerRadius(12)
+                        
+                        HStack(spacing: 10) {
+                            Button("Fetch Audio") {
+                                fetchQuestionOneAudio()
+                            }
+                            .padding()
+                            .background(Color(hex: "#FFB74D"))
+                            .foregroundColor(.white)
+                            .cornerRadius(12)
+                            
+                            Button("Play Audio") {
+                                playQuestionOneAudio()
+                            }
+                            .padding()
+                            .background(isAudioFetched ? Color(hex: "#FFB74D") : Color.gray)
+                            .foregroundColor(.white)
+                            .cornerRadius(12)
+                            .disabled(!isAudioFetched)
                         }
+                        
                         TextField("Your answer...", text: $typedAnswer)
                             .textFieldStyle(RoundedBorderTextFieldStyle())
+                        
                         Button("Submit Answer") {
-                            submitComprehensionAnswer()
+                            submitQuestionOneAnswer()
                         }
                         .buttonStyle(.borderedProminent)
                         .tint(Color(hex: "#FBC02D"))
@@ -187,12 +314,14 @@ struct ComprehensionSectionView: View {
                         }
                         HStack(spacing: 20) {
                             ForEach(["B", "D", "W", "M"], id: \.self) { letter in
-                                Button(letter) { selectedLetter = letter }
-                                    .padding()
-                                    .frame(maxWidth: .infinity)
-                                    .background(selectedLetter == letter ? Color(hex: "#FFB74D") : Color(hex: "#FFCC80"))
-                                    .cornerRadius(8)
-                                    .foregroundColor(Color(hex: "#5D4037"))
+                                Button(letter) {
+                                    selectedLetter = letter
+                                }
+                                .padding()
+                                .frame(maxWidth: .infinity)
+                                .background(selectedLetter == letter ? Color(hex: "#FFB74D") : Color(hex: "#FFCC80"))
+                                .cornerRadius(8)
+                                .foregroundColor(Color(hex: "#5D4037"))
                             }
                         }
                         Button("Submit Letter") {
@@ -213,23 +342,51 @@ struct ComprehensionSectionView: View {
         }
     }
     
-    // MARK: - Backend Calls for Section 1
-    func playComprehensionAudio() {
-        BackendManager.fetchAudio(route: "/comprehension/audio") { data in
-            print("Played comprehension audio.")
+    // MARK: - Question 1: GET /question_one -> MP3, then Play
+    func fetchQuestionOneAudio() {
+        isLoadingAudio = true
+        BackendManager.getRequest(route: "/question_one") { data in
+            DispatchQueue.main.async {
+                self.isLoadingAudio = false
+            }
+            guard let data = data else {
+                print("Failed to fetch question 1 audio.")
+                return
+            }
+            print("Question 1 audio fetched: \(data.count) bytes")
+            // Prepare AVAudioPlayer
+            DispatchQueue.main.async {
+                do {
+                    player = try AVAudioPlayer(data: data)
+                    isAudioFetched = true
+                    print("Audio player ready.")
+                } catch {
+                    print("Error initializing AVAudioPlayer: \(error)")
+                }
+            }
         }
     }
     
-    func submitComprehensionAnswer() {
-        let payload = ["answer": typedAnswer]
-        BackendManager.submitAnswer(route: "/comprehension/grade", payload: payload) { success in
-            print("Submitted comprehension answer: \(success)")
+    func playQuestionOneAudio() {
+        guard let player = player else {
+            print("Audio not available yet.")
+            return
+        }
+        player.play()
+        print("Playing question 1 audio.")
+    }
+    
+    func submitQuestionOneAnswer() {
+        let payload = ["question_one_answer": typedAnswer]
+        BackendManager.postRequest(route: "/question_one", payload: payload) { success in
+            print(success ? "Question 1 answer submitted." : "Failed to submit question 1 answer.")
         }
     }
     
+    // MARK: - Letter Discrimination
     func playLetterAudio() {
         BackendManager.fetchAudio(route: "/comprehension/letter") { data in
-            print("Played letter audio.")
+            print("Played letter audio (dummy).")
         }
     }
     
@@ -261,19 +418,22 @@ struct PronunciationSectionView: View {
                     .font(.largeTitle)
                     .fontWeight(.semibold)
                     .padding()
+                
                 Button(action: {
                     isRecording.toggle()
                     if !isRecording {
                         submitPronunciationAudio()
                     }
                 }) {
-                    Label(isRecording ? "Stop" : "Record", systemImage: isRecording ? "stop.circle.fill" : "mic.fill")
+                    Label(isRecording ? "Stop" : "Record",
+                          systemImage: isRecording ? "stop.circle.fill" : "mic.fill")
                         .font(.title2)
                         .foregroundColor(.white)
                         .padding()
                         .background(isRecording ? Color(hex: "#FB8C00") : Color(hex: "#FFA726"))
                         .cornerRadius(12)
                 }
+                
                 Button("Next Section") {
                     currentSection = 3
                 }
@@ -311,19 +471,22 @@ struct StutterDetectionSectionView: View {
                     .font(.largeTitle)
                     .fontWeight(.semibold)
                     .padding()
+                
                 Button(action: {
                     isRecording.toggle()
                     if !isRecording {
                         submitStutterAudio()
                     }
                 }) {
-                    Label(isRecording ? "Stop" : "Record", systemImage: isRecording ? "stop.circle.fill" : "mic.fill")
+                    Label(isRecording ? "Stop" : "Record",
+                          systemImage: isRecording ? "stop.circle.fill" : "mic.fill")
                         .font(.title2)
                         .foregroundColor(.white)
                         .padding()
                         .background(isRecording ? Color(hex: "#FB8C00") : Color(hex: "#FFA726"))
                         .cornerRadius(12)
                 }
+                
                 Button("Next Section") {
                     currentSection = 4
                 }
@@ -362,6 +525,7 @@ struct HandwritingSectionView: View {
                         Text(sentenceToWrite)
                             .font(.body)
                             .padding()
+                        
                         Button(action: playHandwritingAudio) {
                             Label("Play Sentence", systemImage: "speaker.wave.2.fill")
                                 .font(.title2)
@@ -381,6 +545,7 @@ struct HandwritingSectionView: View {
                                 .background(Color(hex: "#FFA726"))
                                 .cornerRadius(12)
                         }
+                        
                         if let image = capturedImage {
                             image
                                 .resizable()
@@ -388,6 +553,7 @@ struct HandwritingSectionView: View {
                                 .frame(height: 200)
                                 .cornerRadius(10)
                         }
+                        
                         Button("Submit Handwriting") {
                             submitHandwritingImage()
                         }
@@ -422,11 +588,10 @@ struct HandwritingSectionView: View {
     }
 }
 
+
 // MARK: - Preview
 struct TestView_Previews: PreviewProvider {
     static var previews: some View {
-        NavigationView {
-            TestView()
-        }
+        StartTestView()
     }
 }
