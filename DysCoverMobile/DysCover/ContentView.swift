@@ -1,6 +1,5 @@
 import SwiftUI
 
-// Helper extension to use hex strings for colors.
 extension Color {
     init(hex: String) {
         var hexSanitized = hex.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -20,48 +19,43 @@ extension Color {
 struct ContentView: View {
     var body: some View {
         ZStack {
-            // Background Gradient
             LinearGradient(
-                gradient: Gradient(colors: [Color(hex: "#8E2DE2"), Color(hex: "#4A00E0")]),
-                startPoint: .topLeading,
-                endPoint: .bottomTrailing
-            )
-            .edgesIgnoringSafeArea(.all)
+                            gradient: Gradient(colors: [Color(hex: "#FFF9C4"), Color(hex: "#FFD54F")]),
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        )
+                        .edgesIgnoringSafeArea(.all)
             
             VStack(spacing: 30) {
-                // Header Image in a circular frame.
-                Image("zebra")
+                Image("koala_logo_v1")
                     .resizable()
-                    .aspectRatio(contentMode: .fill)
-                    .frame(width: 140, height: 140)
+                    .aspectRatio(contentMode: .fit)
+                    .frame(width: 170, height: 170)
                     .clipShape(Circle())
                     .overlay(Circle().stroke(Color.white, lineWidth: 4))
                     .shadow(radius: 10)
                     .padding(.top, 80)
                 
-                // Title
                 Text("DysCover")
-                    .font(.system(size: 48, weight: .heavy, design: .rounded))
+                    .font(.system(size: 52, weight: .heavy, design: .rounded))
                     .foregroundColor(.white)
                     .shadow(color: Color.black.opacity(0.2), radius: 3, x: 0, y: 3)
                 
-                // Subtitle
-                Text("By Ishan, Rithvik, and Justin")
-                    .font(.headline)
-                    .foregroundColor(Color.white.opacity(0.85))
+                Text("Empathetic tagline about us!")
+                    .foregroundColor(Color.gray.opacity(0.95))
+                    .font(.system(size: 22))
                 
                 Spacer()
                 
-                // "Get Started" Button
                 Button(action: {
                     goTest()
                 }) {
                     Text("Get Started")
-                        .font(.headline)
+                        .font(.system(size: 24, weight: .heavy))
                         .padding()
                         .frame(maxWidth: .infinity)
                         .background(Color.white)
-                        .foregroundColor(Color(hex: "#4A00E0"))
+                        .foregroundColor(Color(hex: "#FFB74D"))
                         .cornerRadius(25)
                         .shadow(radius: 5)
                         .padding(.horizontal, 40)
@@ -76,7 +70,7 @@ struct ContentView: View {
 
 func goTest() {
     if let window = UIApplication.shared.windows.first {
-        window.rootViewController = UIHostingController(rootView: httpRequest())
+        window.rootViewController = UIHostingController(rootView: DashboardView())
         window.makeKeyAndVisible()
     }
 }

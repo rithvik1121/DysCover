@@ -11,7 +11,8 @@
 		D0227E7E2D716CAC005C2D61 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D0227E7D2D716CAC005C2D61 /* ContentView.swift */; };
 		D0227E802D716CAF005C2D61 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = D0227E7F2D716CAF005C2D61 /* Assets.xcassets */; };
 		D0227E832D716CAF005C2D61 /* Preview Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = D0227E822D716CAF005C2D61 /* Preview Assets.xcassets */; };
-		D0227E8A2D71729A005C2D61 /* httpRequest.swift in Sources */ = {isa = PBXBuildFile; fileRef = D0227E892D71729A005C2D61 /* httpRequest.swift */; };
+		D08A2CAC2D73700500BCBA2B /* DashboardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D08A2CAB2D73700500BCBA2B /* DashboardView.swift */; };
+		D08A2CAE2D73707E00BCBA2B /* TestView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D08A2CAD2D73707E00BCBA2B /* TestView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -20,7 +21,8 @@
 		D0227E7D2D716CAC005C2D61 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
 		D0227E7F2D716CAF005C2D61 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		D0227E822D716CAF005C2D61 /* Preview Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = "Preview Assets.xcassets"; sourceTree = "<group>"; };
-		D0227E892D71729A005C2D61 /* httpRequest.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = httpRequest.swift; sourceTree = "<group>"; };
+		D08A2CAB2D73700500BCBA2B /* DashboardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DashboardView.swift; sourceTree = "<group>"; };
+		D08A2CAD2D73707E00BCBA2B /* TestView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TestView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -55,9 +57,10 @@
 			children = (
 				D0227E7B2D716CAC005C2D61 /* DysCoverApp.swift */,
 				D0227E7D2D716CAC005C2D61 /* ContentView.swift */,
+				D08A2CAB2D73700500BCBA2B /* DashboardView.swift */,
+				D08A2CAD2D73707E00BCBA2B /* TestView.swift */,
 				D0227E7F2D716CAF005C2D61 /* Assets.xcassets */,
 				D0227E812D716CAF005C2D61 /* Preview Content */,
-				D0227E892D71729A005C2D61 /* httpRequest.swift */,
 			);
 			path = DysCover;
 			sourceTree = "<group>";
@@ -140,7 +143,8 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				D0227E8A2D71729A005C2D61 /* httpRequest.swift in Sources */,
+				D08A2CAE2D73707E00BCBA2B /* TestView.swift in Sources */,
+				D08A2CAC2D73700500BCBA2B /* DashboardView.swift in Sources */,
 				D0227E7E2D716CAC005C2D61 /* ContentView.swift in Sources */,
 				D0227E7C2D716CAC005C2D61 /* DysCoverApp.swift in Sources */,
 			);
