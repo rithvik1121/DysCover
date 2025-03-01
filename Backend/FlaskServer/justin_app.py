@@ -93,7 +93,7 @@ def question_one_post():
     #if wrong answer
     elif question_one_answer.lower() != correct_answer:
         #get exact score
-        relative_score = percent_correct(correct_answer, question_one_answer)
+        relative_score = percent_correct(correct_answer, question_one_answer.lower())
         #update dataframe
         user_dataframe.loc[0, user_dataframe.columns[1]] = 'incorrect'
         user_dataframe.loc[0, user_dataframe.columns[6]] = relative_score
