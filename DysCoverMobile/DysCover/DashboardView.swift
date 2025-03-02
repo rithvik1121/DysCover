@@ -1,6 +1,5 @@
 import SwiftUI
 
-
 // A reusable donut chart view for percentage metrics.
 struct DonutChartView: View {
     var progress: CGFloat  // Expected range: 0 to 1.
@@ -72,6 +71,8 @@ struct DashboardView: View {
     // Define a grid layout with two columns.
     let gridColumns = [GridItem(.flexible()), GridItem(.flexible())]
     
+    @State private var navigateToEnterUsername = false
+    
     var body: some View {
         NavigationView {
             ZStack {
@@ -84,37 +85,9 @@ struct DashboardView: View {
                 .edgesIgnoringSafeArea(.all)
                 
                 ScrollView {
-                        // Progress metric cards.
-                        VStack(spacing: 20) {
-                            ProgressMetricView(
-                                progress: 0.4,  // Example: 120 sec out of 300 sec.
-                                title: "Avg Time to Complete Test",
-                                valueText: "2:00 min"
-                            )
-                            
-                            ProgressMetricView(
-                                progress: 0.5,  // Example: 250 ms out of 500 ms.
-                                title: "Visual Processing Speed",
-                                valueText: "250 ms"
-                            )
-                        }
-                        .padding(.horizontal)
-                        
-                        // "Take Test" Button.
-                        NavigationLink(destination: TestView()) {
-                            Text("Take Test")
-                                .font(.headline)
-                                .foregroundColor(.white)
-                                .padding()
-                                .frame(maxWidth: .infinity)
-                                .background(Color.blue)
-                                .cornerRadius(10)
-                        }
-                        .padding(.horizontal)
-                        .padding(.vertical, 10)
                     VStack(alignment: .leading, spacing: 30) {
                         // Greeting.
-                        Text("Hello, Alex")
+                        Text("Hello, \(globalUsername.isEmpty ? "User" : globalUsername)")
                             .font(.largeTitle)
                             .fontWeight(.bold)
                             .padding(.top)
@@ -150,7 +123,41 @@ struct DashboardView: View {
                         }
                         .padding(.horizontal)
                         
+                        // Progress metric cards.
+                        VStack(spacing: 20) {
+                            ProgressMetricView(
+                                progress: 0.4,  // Example: 120 sec out of 300 sec.
+                                title: "Avg Time to Complete Test",
+                                valueText: "2:00 min"
+                            )
+                            
+                            ProgressMetricView(
+                                progress: 0.5,  // Example: 250 ms out of 500 ms.
+                                title: "Visual Processing Speed",
+                                valueText: "250 ms"
+                            )
+                        }
+                        .padding(.horizontal)
                         
+                        // "Take Test" Button (UPDATED!)
+                        Button(action: {
+                            navigateToEnterUsername = true
+                        }) {
+                            Text("Take Test")
+                                .font(.headline)
+                                .foregroundColor(.white)
+                                .padding()
+                                .frame(maxWidth: .infinity)
+                                .background(Color.blue)
+                                .cornerRadius(10)
+                        }
+                        .padding(.horizontal)
+                        .padding(.vertical, 10)
+                        
+                        NavigationLink(destination: EnterUsernameView(), isActive: $navigateToEnterUsername) {
+                            EmptyView()
+                        }
+
                         Spacer()
                     }
                     .padding(.bottom, 20)
@@ -160,8 +167,6 @@ struct DashboardView: View {
         }
     }
 }
-
-
 
 struct DashboardView_Previews: PreviewProvider {
     static var previews: some View {

@@ -13,6 +13,8 @@
 		D0227E832D716CAF005C2D61 /* Preview Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = D0227E822D716CAF005C2D61 /* Preview Assets.xcassets */; };
 		D08A2CAC2D73700500BCBA2B /* DashboardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D08A2CAB2D73700500BCBA2B /* DashboardView.swift */; };
 		D08A2CAE2D73707E00BCBA2B /* TestView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D08A2CAD2D73707E00BCBA2B /* TestView.swift */; };
+		D08A2CB42D73CD0000BCBA2B /* EnterUsernameView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D08A2CB32D73CD0000BCBA2B /* EnterUsernameView.swift */; };
+		D08A2CB62D73D37800BCBA2B /* Globals.swift in Sources */ = {isa = PBXBuildFile; fileRef = D08A2CB52D73D37800BCBA2B /* Globals.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -23,6 +25,8 @@
 		D0227E822D716CAF005C2D61 /* Preview Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = "Preview Assets.xcassets"; sourceTree = "<group>"; };
 		D08A2CAB2D73700500BCBA2B /* DashboardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DashboardView.swift; sourceTree = "<group>"; };
 		D08A2CAD2D73707E00BCBA2B /* TestView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TestView.swift; sourceTree = "<group>"; };
+		D08A2CB32D73CD0000BCBA2B /* EnterUsernameView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EnterUsernameView.swift; sourceTree = "<group>"; };
+		D08A2CB52D73D37800BCBA2B /* Globals.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Globals.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -57,6 +61,8 @@
 			children = (
 				D0227E7B2D716CAC005C2D61 /* DysCoverApp.swift */,
 				D0227E7D2D716CAC005C2D61 /* ContentView.swift */,
+				D08A2CB52D73D37800BCBA2B /* Globals.swift */,
+				D08A2CB32D73CD0000BCBA2B /* EnterUsernameView.swift */,
 				D08A2CAB2D73700500BCBA2B /* DashboardView.swift */,
 				D08A2CAD2D73707E00BCBA2B /* TestView.swift */,
 				D0227E7F2D716CAF005C2D61 /* Assets.xcassets */,
@@ -145,8 +151,10 @@
 			files = (
 				D08A2CAE2D73707E00BCBA2B /* TestView.swift in Sources */,
 				D08A2CAC2D73700500BCBA2B /* DashboardView.swift in Sources */,
+				D08A2CB62D73D37800BCBA2B /* Globals.swift in Sources */,
 				D0227E7E2D716CAC005C2D61 /* ContentView.swift in Sources */,
 				D0227E7C2D716CAC005C2D61 /* DysCoverApp.swift in Sources */,
+				D08A2CB42D73CD0000BCBA2B /* EnterUsernameView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
