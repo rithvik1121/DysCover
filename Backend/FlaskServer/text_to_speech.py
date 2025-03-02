@@ -16,7 +16,7 @@ def create_audio(app, text, filename="output.mp3"):
     if not os.path.exists(audio_folder):
         os.makedirs(audio_folder)
     
-    filename = os.path.join(app.static_folder, audio_folder, "output.mp3")
+    filepath = os.path.join(audio_folder, filename)
     
     audio = client.text_to_speech.convert(
         text=text,
@@ -24,6 +24,7 @@ def create_audio(app, text, filename="output.mp3"):
         model_id="eleven_flash_v2",
         output_format="mp3_22050_32",
         )
-    save(audio, filename)
+    print(filepath)
+    save(audio, filepath)
     
-    return filename
+    return filepath
