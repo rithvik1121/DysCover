@@ -15,9 +15,9 @@ user_dataframe = pd.DataFrame(columns=[
 ])
 
 CORRECT_ANSWER = {
-    'question1': None,
-    'question2': None, 
-    'question3': None,
+    'question1': "",
+    'question2': "", 
+    'question3': "",
 }
 
 def get_db():
@@ -169,7 +169,7 @@ def question_two_post():
 @app.route('/question_three', methods=['GET'])
 def question_three_get():
     word = random.choice(QUESTION_THREE_WORDS)
-    print(word)
+    CORRECT_ANSWER["question3"] = word
     return jsonify({'word_prompt': word}), 200
 
 @app.route('/question_three', methods=['POST'])
@@ -181,11 +181,24 @@ def question_three_post():
         return jsonify({'error': 'No audio file provided'}), 400
 
     audio_file = request.files['audio']
-    filename = audio_file.filename
-    file_path = os.path.join(UPLOAD_FOLDER, filename)
+    file_path = os.path.join(UPLOAD_FOLDER, "output.m4a")
     audio_file.save(file_path)
     print(f"Received audio file: {file_path}")
-        
+    
+    try:
+        text = transcribe_audio(file_path)
+        print(text)
+        if CORRECT_ANSWER['question3'].lower() == text.lower():
+            user_dataframe.loc[0, user_dataframe.columns[4]] = 'correct'
+            user_dataframe.loc[0, user_dataframe.columns[9]] = "yes"
+            
+        else:
+            user_dataframe.loc[0, user_dataframe.columns[4]] = 'incorrect'
+            user_dataframe.loc[0, user_dataframe.columns[9]] = "no"
+            
+    except Exception as e:
+        return jsonify({'error': f'Transcription failed, {str(e)}'}), 500
+    
     return jsonify({'message': 'Question 3 audio received successfully'}), 200
 
 
