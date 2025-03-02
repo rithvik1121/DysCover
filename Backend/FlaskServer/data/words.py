@@ -1,17 +1,62 @@
 QUESTION_ONE_WORDS = [
     "Giraffe",
     "Lion",
-    "Volcano"
+    "Volcano",
+    'Cloud',
+    'Rain',
+    'Tree',
+    'Mountain',
+    'Ocean',
+    'Lake',
+    'Plane',
+    'Plain',
+    'Plate',
+    'Fruit',
+    'Successfully',
+    'Appreciate',
+    'Eliminate',
+    'Ascertain',
+    'Koala'
 ]
 
 QUESTION_THREE_WORDS = ["orange", 
                         "banana", 
-                        "triangle"]
+                        "triangle",
+                        "yellow",
+                        "plait",
+                        "claim",
+                        "clam",
+                        "clay",
+                        "blue",
+                        "blow",
+                        "cram",
+                        "shoe",
+                        "shoo",
+                        "show",
+                        "throw",
+                        "threw",
+                        "alert",
+                        "koala"
+                        ]
 
 QUESTION_FOUR_WORDS = ["abracadabra", 
                        "mexico", 
-                       "giraffe"]
+                       "giraffe",
+                       "canada",
+                       "america",
+                       "praise",
+                       "hike",
+                       "behold",
+                       "friend",
+                       "koala"
+                       ]
 
 QUESTION_FIVE_PHRASES = ["Hello World", 
                          "I love Koalas", 
-                         "Learning is fun"]
+                         "Learning is fun",
+                         "Join Drexel AI",
+                         "Alex Justin Rithvik and Ishan",
+                         "DysCover is a wonderful tool",
+                         'I am Vibe Coding right now',
+                         'Chat is this real'
+                         ]
