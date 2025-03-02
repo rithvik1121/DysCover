@@ -258,20 +258,34 @@ struct DashboardView: View {
                             .font(.title3)
                             .foregroundColor(.brown.opacity(0.8))
                         
-                        // The "Take Test" button near the top
-                        NavigationLink(destination: TestView()) {
-                            Text("Take Test")
-                                .font(.title3)
-                                .foregroundColor(.white)
-                                .padding(.horizontal, 32)
-                                .padding(.vertical, 12)
-                                .background(Color.blue)
-                                .cornerRadius(12)
-                        }
-                        
-                        Divider()
-                            .padding(.horizontal, 50)
-                            .padding(.top, 10)
+                        HStack(spacing: 16) {
+                                                    NavigationLink(destination: TestView()) {
+                                                        Text("Take Test")
+                                                            .font(.headline)
+                                                            .foregroundColor(.white)
+                                                            .padding(.vertical, 12)
+                                                            .padding(.horizontal, 24)
+                                                            .background(Color.blue)
+                                                            .cornerRadius(12)
+                                                            .shadow(radius: 3)
+                                                    }
+                                                    
+                                                    NavigationLink(destination: LearningView()) {
+                                                        Text("Learning")
+                                                            .font(.headline)
+                                                            .foregroundColor(.white)
+                                                            .padding(.vertical, 12)
+                                                            .padding(.horizontal, 24)
+                                                            .background(Color.green)
+                                                            .cornerRadius(12)
+                                                            .shadow(radius: 3)
+                                                    }
+                                                }
+                                                .padding(.top, 10)
+                                                
+                                                Divider()
+                                                    .padding(.horizontal, 50)
+                                                    .padding(.top, 10)
                         
                         // Horizontal bar set
                         ScrollView(.horizontal, showsIndicators: false) {

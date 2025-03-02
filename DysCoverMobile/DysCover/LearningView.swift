@@ -85,6 +85,7 @@ struct LearningCardView<Content: View>: View {
 
 // MARK: - LearningView
 struct LearningView: View {
+    @Environment(\.dismiss) var dismiss  // Enables the back button to pop the view
     @State private var learningQuestions: [LearningQuestion] = []
     @State private var currentQuestionIndex: Int = 0
     @State private var userAnswer: String = ""
@@ -129,7 +130,7 @@ struct LearningView: View {
                             .font(.headline)
                             .foregroundColor(.gray)
                         
-                        // Question Card
+                        // Question Card using LearningCardView
                         LearningCardView {
                             VStack(spacing: 16) {
                                 Button(action: playCurrentAudio) {
@@ -191,7 +192,19 @@ struct LearningView: View {
                     .animation(.easeInOut, value: detailedFeedback)
                 }
             }
-            .navigationBarHidden(true)
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .navigationBarLeading) {
+                    Button(action: { dismiss() }) {
+                        HStack {
+                            Image(systemName: "chevron.left")
+                            Text("Dashboard")
+                        }
+                        .foregroundColor(Color(hex: "#F57F17"))
+                    }
+                }
+            }
+            .navigationBarHidden(false)
         }
         .onAppear {
             loadLearningQuestions()
@@ -242,8 +255,13 @@ struct LearningView: View {
     
     private func submitAnswer() {
         guard !learningQuestions.isEmpty, currentQuestionIndex < learningQuestions.count else { return }
-        let correctAnswer = learningQuestions[currentQuestionIndex].correct_answer
-        let (comparedAttributed, percent) = compareAnswers(correct: correctAnswer, user: userAnswer)
+        let correct = learningQuestions[currentQuestionIndex].correct_answer
+            .lowercased()
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+        let user = userAnswer.lowercased().trimmingCharacters(in: .whitespacesAndNewlines)
+        
+        // Build attributed string with mismatches highlighted
+        let (comparedAttributed, percent) = compareAnswers(correct: correct, user: user)
         percentWrong = percent
         detailedFeedback = comparedAttributed
         showNextButton = true
@@ -263,21 +281,19 @@ struct LearningView: View {
     
     // MARK: - Answer Comparison Function
     private func compareAnswers(correct: String, user: String) -> (AttributedString, Double) {
-        let lowerCorrect = correct.lowercased()
-        let lowerUser = user.lowercased()
         var result = AttributedString("")
         var mismatches = 0
-        let count = lowerCorrect.count
+        let count = correct.count
         
         for i in 0..<count {
-            let correctIndex = lowerCorrect.index(lowerCorrect.startIndex, offsetBy: i)
-            let correctChar = lowerCorrect[correctIndex]
+            let correctIndex = correct.index(correct.startIndex, offsetBy: i)
+            let correctChar = correct[correctIndex]
             let charStr = String(correctChar)
             var attr = AttributedString(charStr)
             
-            if i < lowerUser.count {
-                let userIndex = lowerUser.index(lowerUser.startIndex, offsetBy: i)
-                let userChar = lowerUser[userIndex]
+            if i < user.count {
+                let userIndex = user.index(user.startIndex, offsetBy: i)
+                let userChar = user[userIndex]
                 if userChar == correctChar {
                     attr.foregroundColor = .green
                 } else {
@@ -285,7 +301,7 @@ struct LearningView: View {
                     mismatches += 1
                 }
             } else {
-                // Missing character from user input
+                // Missing character in user input
                 attr.foregroundColor = .red
                 mismatches += 1
             }
