@@ -39,16 +39,10 @@ QUESTION_THREE_WORDS = ["orange",
                         "koala"
                         ]
 
-QUESTION_FOUR_WORDS = ["abracadabra", 
+QUESTION_FOUR_WORDS = [
                        "mexico", 
                        "giraffe",
-                       "canada",
-                       "america",
-                       "praise",
-                       "hike",
-                       "behold",
                        "friend",
-                       "koala"
                        ]
 
 QUESTION_FIVE_PHRASES = ["Hello World", 
