@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Teacher Dashboard</title>
+    <!-- Bootstrap CSS for styling -->
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <style>
+      body { background: #f8f9fa; }
+      .container { margin-top: 40px; }
+    </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Teacher Dashboard</h1>
+    <form method="post" class="mb-4">
+      <div class="form-group">
+        <label for="class_name">Enter Class Name:</label>
+        <input type="text" class="form-control" name="class_name" id="class_name" placeholder="e.g., SmithClass" value="{{ class_name or '' }}">
+      </div>
+      <button type="submit" class="btn btn-primary">View Class Data</button>
+    </form>
+    
+    {% if class_name %}
+      <hr>
+      <h2>Students in Class: {{ class_name }}</h2>
+      {% if users %}
+        <ul class="list-group">
+          {% for user in users %}
+            <li class="list-group-item">
+              <a href="{{ url_for('user_dashboard', username=user['username']) }}">{{ user['username'] }}</a>
+            </li>
+          {% endfor %}
+        </ul>
+      {% else %}
+        <p>No students found for this class.</p>
+      {% endif %}
+    {% endif %}
+  </div>
+</body>
+</html>

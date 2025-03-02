@@ -9,6 +9,23 @@ import sqlite3
 
 app = Flask(__name__)
 
+DATABASE = "Database/user_data.sqlite"
+
+# Use Flask's g to create a per-request connection.
+def get_db():
+    if 'db' not in g:
+        # Allow the connection to be used in multiple threads.
+        g.db = sqlite3.connect(DATABASE, check_same_thread=False)
+        g.db.row_factory = sqlite3.Row  # enables dict-like row access in templates/JSON
+    return g.db
+
+@app.teardown_appcontext
+def close_connection(exception):
+    db = g.pop('db', None)
+    if db is not None:
+        db.close()
+        print("Database connection closed.")
+
 user_dataframe = pd.DataFrame(columns=[
     'username', 'class', 'question1', 'question2', 'question3', 'question4', 'question5',
     'spelling_accuracy', 'stutter_metric', 'speaking_accuracy', 'handwriting_metric', 'total_score'
@@ -20,22 +37,12 @@ CORRECT_ANSWER = {
     'question3': "",
 }
 
-def get_db():
-    if 'db' not in g:  # Ensure only one connection per request
-        g.db = sqlite3.connect('Database/user_data.sqlite.sqlite')
-        g.cursor = g.db.cursor()
-    return g.db, g.cursor
 
-@app.teardown_appcontext
-def close_db(error=None):
-    db = g.pop('db', None)
-    if db is not None:
-        db.close()
-        print("Database connection closed.")
 
 def insert_data(username, class_name, question1, question2, question3, question4, question5, 
                 spelling_accuracy, stutter_metric, speaking_accuracy, handwriting_metric, total_score):
-    db, cursor = get_db()
+    db = get_db()
+    cursor = db.cursor()
     cursor.execute("""
         INSERT INTO data (
             username, class, question1, question2, question3, question4, question5, 
@@ -47,22 +54,40 @@ def insert_data(username, class_name, question1, question2, question3, question4
     print(f"Data inserted for user: {username}")
 
 def retrieve_data():
-    db, cursor = get_db()
+    db = get_db()
+    cursor = db.cursor()
     cursor.execute("SELECT * FROM data;")
     rows = cursor.fetchall()
     return rows
 
 def retrieve_user_data(username):
-    db, cursor = get_db()
+    db = get_db()
+    cursor = db.cursor()
     cursor.execute("SELECT * FROM data WHERE username = ?;", (username,))
     rows = cursor.fetchall()
     return rows
 
 def retrieve_user_class_data(username, class_name):
-    db, cursor = get_db()
+    db = get_db()
+    cursor = db.cursor()
     cursor.execute("SELECT * FROM data WHERE username = ? AND class = ?;", (username, class_name))
     rows = cursor.fetchall()
     return rows
+
+
+@app.route('/get_user_class_data', methods=['GET'])
+def get_user_class_data_route():
+    username = request.args.get('username')
+    class_name = request.args.get('class_name')
+    
+    if not username or not class_name:
+        return jsonify({'error': 'Missing username or class_name parameter'}), 400
+
+    rows = retrieve_user_class_data(username, class_name)  # returns sqlite3.Row
+    data = [dict(row) for row in rows]
+    print(jsonify(data))
+    return jsonify(data)
+
 
 def count_differences(correct: str, user_input: str) -> int:
     """
@@ -181,7 +206,7 @@ def question_three_post():
         return jsonify({'error': 'No audio file provided'}), 400
 
     audio_file = request.files['audio']
-    file_path = os.path.join(UPLOAD_FOLDER, "output.m4a")
+    file_path = os.path.join(UPLOAD_FOLDER, "question3.m4a")
     audio_file.save(file_path)
     print(f"Received audio file: {file_path}")
     
@@ -251,8 +276,9 @@ def question_five_post():
 
 @app.route('/finish_test', methods=['POST'])
 def finish_test():
-    db, cursor = get_db()
-    
+    db = get_db()
+    cursor = db.cursor()
+
     if user_dataframe.empty:
         return jsonify({'error': 'No test data to save'}), 400
 
@@ -277,8 +303,7 @@ def finish_test():
         test_data.get('handwriting_metric', 0),
         test_data.get('total_score', 0),
     ))
-
-    db.commit()  
+    cursor.commit()  
     print(f"Test data saved for user: {test_data.get('username', 'Unknown')}")
 
     return jsonify({'message': 'Test results saved successfully'}), 200

@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>{{ username }} - Test History Dashboard</title>
+    <!-- Bootstrap CSS -->
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <!-- Chart.js for charts -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+      body { background: #f8f9fa; }
+      .container { margin-top: 40px; }
+      .card { margin-bottom: 20px; }
+    </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Dashboard for {{ username }}</h1>
+    <hr>
+    <h3>Aggregated Metrics</h3>
+    <div class="row">
+      <div class="col-md-4">
+        <div class="card text-white bg-success">
+          <div class="card-body">
+            <h5 class="card-title">Avg. Total Score</h5>
+            <p class="card-text">{{ avg_total }}</p>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="card text-white bg-info">
+          <div class="card-body">
+            <h5 class="card-title">Avg. Spelling Accuracy</h5>
+            <p class="card-text">{{ avg_spelling }}</p>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="card text-white bg-warning">
+          <div class="card-body">
+            <h5 class="card-title">Avg. Handwriting</h5>
+            <p class="card-text">{{ avg_handwriting }}</p>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <hr>
+    <h3>Test History</h3>
+    <table class="table table-bordered table-striped">
+      <thead class="thead-dark">
+        <tr>
+          <th>Test ID</th>
+          <th>Question 1</th>
+          <th>Question 2</th>
+          <th>Question 3</th>
+          <th>Question 4</th>
+          <th>Question 5</th>
+          <th>Spelling</th>
+          <th>Stutter</th>
+          <th>Speaking</th>
+          <th>Handwriting</th>
+          <th>Total Score</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in records %}
+          <tr>
+            <td>{{ row.test_id }}</td>
+            <td>{{ row.question1 }}</td>
+            <td>{{ row.question2 }}</td>
+            <td>{{ row.question3 }}</td>
+            <td>{{ row.question4 }}</td>
+            <td>{{ row.question5 }}</td>
+            <td>{{ row.spelling_accuracy }}</td>
+            <td>{{ row.stutter_metric }}</td>
+            <td>{{ row.speaking_accuracy }}</td>
+            <td>{{ row.handwriting_metric }}</td>
+            <td>{{ row.total_score }}</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    
+    <hr>
+    <h3>Charts</h3>
+    <div class="row">
+      <div class="col-md-4">
+        <canvas id="totalScoreChart"></canvas>
+      </div>
+      <div class="col-md-4">
+        <canvas id="spellingChart"></canvas>
+      </div>
+      <div class="col-md-4">
+        <canvas id="handwritingChart"></canvas>
+      </div>
+    </div>
+  </div>
+  
+  <script>
+    // Data passed from Flask
+    var testIds = {{ test_ids | tojson }};
+    var totalScores = {{ total_scores | tojson }};
+    var spellingScores = {{ spelling_scores | tojson }};
+    var handwritingScores = {{ handwriting_scores | tojson }};
+    
+    // Total Score Chart
+    var ctx1 = document.getElementById('totalScoreChart').getContext('2d');
+    new Chart(ctx1, {
+      type: 'line',
+      data: {
+        labels: testIds,
+        datasets: [{
+          label: 'Total Score',
+          data: totalScores,
+          borderColor: 'rgba(40, 167, 69, 1)',
+          backgroundColor: 'rgba(40, 167, 69, 0.2)',
+          fill: true
+        }]
+      },
+      options: {
+        responsive: true,
+        title: {
+          display: true,
+          text: 'Total Score Over Tests'
+        }
+      }
+    });
+    
+    // Spelling Accuracy Chart
+    var ctx2 = document.getElementById('spellingChart').getContext('2d');
+    new Chart(ctx2, {
+      type: 'line',
+      data: {
+        labels: testIds,
+        datasets: [{
+          label: 'Spelling Accuracy',
+          data: spellingScores,
+          borderColor: 'rgba(23, 162, 184, 1)',
+          backgroundColor: 'rgba(23, 162, 184, 0.2)',
+          fill: true
+        }]
+      },
+      options: {
+        responsive: true,
+        title: {
+          display: true,
+          text: 'Spelling Accuracy Over Tests'
+        }
+      }
+    });
+    
+    // Handwriting Chart
+    var ctx3 = document.getElementById('handwritingChart').getContext('2d');
+    new Chart(ctx3, {
+      type: 'line',
+      data: {
+        labels: testIds,
+        datasets: [{
+          label: 'Handwriting',
+          data: handwritingScores,
+          borderColor: 'rgba(255, 193, 7, 1)',
+          backgroundColor: 'rgba(255, 193, 7, 0.2)',
+          fill: true
+        }]
+      },
+      options: {
+        responsive: true,
+        title: {
+          display: true,
+          text: 'Handwriting Over Tests'
+        }
+      }
+    });
+  </script>
+</body>
+</html>
