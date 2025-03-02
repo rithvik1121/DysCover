@@ -46,7 +46,7 @@ struct ContentView: View {
                         .foregroundColor(.white)
                         .shadow(color: Color.black.opacity(0.2), radius: 3, x: 0, y: 3)
                     
-                    Text("Empathetic tagline about us!")
+                    Text("Make learning fun!")
                         .foregroundColor(Color.gray.opacity(0.95))
                         .font(.system(size: 22))
                     
