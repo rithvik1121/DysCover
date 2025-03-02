@@ -18,7 +18,7 @@ def handwriting_test(correct_answer, image):
     folder = "/static/handwritten/"
     if not os.path.exists(folder):
         os.makedirs(folder)
-    image_path = folder + "/handwriting.png"
+    image_path = folder + "handwriting.png"
     
     image.save(image_path)
     
