@@ -203,17 +203,15 @@ def question_four_post():
     UPLOAD_FOLDER = 'static/waveforms'
     if not os.path.exists(UPLOAD_FOLDER):
         os.makedirs(UPLOAD_FOLDER)
-    #if 'audio' not in request.files:
-    #    return jsonify({'error': 'No audio file provided'}), 400
+    if 'audio' not in request.files:
+        return jsonify({'error': 'No audio file provided'}), 400
 
     
 
-    #audio_file = request.files['audio']
-    #filename = audio_file.filename
-    filename='FC4AEA8A-A070-432C-9666-17252A83C1C3.m4a'
+    audio_file = request.files['audio']
+    filename = audio_file.filename
     file_path = os.path.join(UPLOAD_FOLDER, filename)
     
-    #audio_file.save('static/waveforms/stutter_detection.wav')
     print(f"Received audio file: {file_path}")
     
     model = StutterCNN()
@@ -223,13 +221,13 @@ def question_four_post():
     #Rithvik GRADE IT HEREEEEEE
     sound = AudioSegment.from_file(file_path, format = 'm4a')
     file_handle = sound.export('static/waveforms/stutter_detection_audio.wav', format='wav')
-
+    os.remove(file_path)
     features = model.extract_features('static/waveforms/stutter_detection_audio.wav')
     features = features.unsqueeze(0)
     result = model(features)
     _, predicted = torch.max(result, 1)
     prediction = int(predicted[0])
-    print(prediction)
+    #print(prediction)
     
     if prediction!=0:
         user_dataframe.loc[0, user_dataframe.columns[5]] = 'incorrect'

@@ -10,32 +10,18 @@ from image_rec import handwriting_test
 
 app = Flask(__name__)
 
+user_dataframe = pd.DataFrame(columns=[
+    'username', 'class', 'question1', 'question2', 'question3', 'question4', 'question5',
+    'spelling_accuracy', 'stutter_metric', 'speaking_accuracy', 'handwriting_metric', 'total_score'
+])
+
 @app.route('/handwriting_analysis', methods=['POST'])
 def handwriting_analysis():
     image = request.files['image']
     response = handwriting_test("Apple", image)
     return jsonify(response=response)
 
-@app.route('/question_five', methods=['GET'])
-def question_five_get():
-    phrase = random.choice(QUESTION_FIVE_PHRASES)
-    
-    return jsonify({'phrase': phrase})
 
-@app.route('/question_five', methods=['POST'])
-def question_five_post():
-    UPLOAD_FOLDER = 'static/handwritten_image'
-    if not os.path.exists(UPLOAD_FOLDER):
-        os.makedirs(UPLOAD_FOLDER)
-    if 'image' not in request.files:
-        return jsonify({'error': 'No image file provided'}), 400
-    image_file = request.files['image']
-    filename = image_file.filename
-    file_path = os.path.join(UPLOAD_FOLDER, filename)
-    image_file.save(file_path)
-    print(f"Received handwriting image: {file_path}")
-    # Here you would process and grade the image.
-    return jsonify({'message': 'Handwriting image received successfully'}), 200
 
 
 if __name__ == '__main__':

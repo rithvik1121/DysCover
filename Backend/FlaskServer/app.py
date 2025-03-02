@@ -20,8 +20,9 @@ def index():
 @app.route('/text_to_speech', methods=['POST'])
 def text_to_speech():
     text = request.form['text']
+    filename = request.args.get('filename', 'output.mp3')
     try:
-        audio_file = create_audio(app, text)
+        audio_file = create_audio(app, text, filename)
         return send_file(audio_file, as_attachment=True)
     except ValueError as e:
         return str(e), 500
@@ -51,4 +52,3 @@ def speech_to_text():
 
 if __name__ == '__main__':
     app.run(debug=True, host="192.168.1.213", port=8442)
-    
