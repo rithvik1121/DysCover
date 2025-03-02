@@ -8,5 +8,6 @@
 import Foundation
 
 // Global variable accessible throughout the app
-var globalUsername: String = ""
+var globalUsername: String = "test_user9"
+var globalClassName: String = "SmithClass"
 

@@ -1,5 +1,6 @@
 import SwiftUI
-import AVFoundation  // For audio playback and recording
+import AVFoundation
+
 
 // MARK: - BackendManager
 class BackendManager {
@@ -49,12 +50,12 @@ class BackendManager {
         }.resume()
     }
     
-    // fetchAudio is the same as getRequest
+    // fetchAudio is the same as getRequest.
     static func fetchAudio(route: String, completion: @escaping (Data?) -> Void) {
         getRequest(route: route, completion: completion)
     }
     
-    // Alias for convenience
+    // Alias for convenience.
     static func submitAnswer(route: String, payload: [String: Any], completion: @escaping (Bool) -> Void) {
         postRequest(route: route, payload: payload, completion: completion)
     }
@@ -87,7 +88,7 @@ struct StepIndicatorView: View {
     }
 }
 
-// MARK: - AudioRecorder (used for recording in Question 3 and Question 4)
+// MARK: - AudioRecorder (used for recording in Section 2 and 3)
 class AudioRecorder: NSObject, ObservableObject, AVAudioRecorderDelegate {
     var audioRecorder: AVAudioRecorder?
     var recordingURL: URL?
@@ -131,9 +132,14 @@ extension Data {
 
 // MARK: - TestView
 struct TestView: View {
-    @State private var didBeginTest = false  // Whether "Begin" has been tapped
+    @State private var didBeginTest = false  // Whether "Begin" has been tapped.
     @State private var isLoading = false
-    @State private var currentSection: Int = 1  // Now 5 sections total
+    // Now 4 sections:
+    // Section 1: Comprehension (Questions 1 & 2)
+    // Section 2: Reading prompt (formerly Question 3)
+    // Section 3: Waveform Analysis
+    // Section 4: Handwriting
+    @State private var currentSection: Int = 1
     
     var body: some View {
         ZStack {
@@ -145,7 +151,7 @@ struct TestView: View {
             .ignoresSafeArea()
             
             if !didBeginTest {
-                // Pre-Test Screen with "Begin" button
+                // Pre-Test Screen.
                 VStack(spacing: 30) {
                     Text("Ready to begin, \(globalUsername)?")
                         .font(.largeTitle)
@@ -153,8 +159,7 @@ struct TestView: View {
                         .foregroundColor(Color(hex: "#F57F17"))
                     
                     if isLoading {
-                        ProgressView()
-                            .progressViewStyle(CircularProgressViewStyle(tint: .white))
+                        ProgressView().progressViewStyle(CircularProgressViewStyle(tint: .white))
                     }
                     
                     Button(action: beginTest) {
@@ -169,17 +174,17 @@ struct TestView: View {
                     .padding(.horizontal, 40)
                 }
             } else {
-                // Test Content (Sections 1-5)
+                // Test Content.
                 VStack(spacing: 20) {
                     VStack(spacing: 8) {
                         Text("Dyslexia Test")
                             .font(.largeTitle)
                             .fontWeight(.bold)
                             .foregroundColor(Color(hex: "#F57F17"))
-                        Text("Section \(currentSection) of 5")
+                        Text("Section \(currentSection) of 4")
                             .font(.headline)
                             .foregroundColor(Color(hex: "#F9A825").opacity(0.85))
-                        StepIndicatorView(current: currentSection, total: 5)
+                        StepIndicatorView(current: currentSection, total: 4)
                     }
                     .padding(.top, 40)
                     
@@ -189,12 +194,10 @@ struct TestView: View {
                         if currentSection == 1 {
                             ComprehensionSectionView(currentSection: $currentSection)
                         } else if currentSection == 2 {
-                            PronunciationSectionView(currentSection: $currentSection)
-                        } else if currentSection == 3 {
                             QuestionThreeSectionView(currentSection: $currentSection)
-                        } else if currentSection == 4 {
+                        } else if currentSection == 3 {
                             WaveformSectionView(currentSection: $currentSection)
-                        } else if currentSection == 5 {
+                        } else if currentSection == 4 {
                             HandwritingSectionView(currentSection: $currentSection)
                         }
                     }
@@ -225,18 +228,24 @@ struct TestView: View {
     }
 }
 
-// MARK: - Section 1: Comprehension
+// MARK: - Section 1: Comprehension (Questions 1 & 2)
 struct ComprehensionSectionView: View {
     @Binding var currentSection: Int
     @State private var typedAnswer: String = ""
     @State private var player: AVAudioPlayer?
     @State private var isAudioFetched = false
     @State private var isLoadingAudio = false
+    
+    // Letter Discrimination (Question Two) states.
+    @State private var letterPlayer: AVAudioPlayer?
+    @State private var isLetterAudioFetched = false
+    @State private var isLetterAudioLoading = false
     @State private var selectedLetter: String? = nil
     
     var body: some View {
         ScrollView {
             VStack(spacing: 20) {
+                // Question 1: Listen & Answer.
                 CardView {
                     VStack(alignment: .leading, spacing: 12) {
                         Text("Question 1: Listen & Answer")
@@ -276,22 +285,35 @@ struct ComprehensionSectionView: View {
                     }
                 }
                 
+                // Question 2: Letter Discrimination.
                 CardView {
                     VStack(alignment: .leading, spacing: 12) {
-                        Text("Letter Discrimination")
+                        Text("Question 2: Letter Discrimination")
                             .font(.headline)
                             .foregroundColor(Color(hex: "#F57F17"))
-                        Text("Tap to hear a letter, then select the correct one.")
+                        Text("Tap 'Fetch Audio' then 'Play Audio' to hear the letter. Then select the correct letter below.")
                             .font(.subheadline)
                             .foregroundColor(Color(hex: "#F9A825"))
-                        Button(action: playLetterAudio) {
-                            Label("Play Letter", systemImage: "speaker.wave.2.fill")
-                                .font(.title2)
-                                .foregroundColor(.white)
-                                .padding()
-                                .background(Color(hex: "#FFA726"))
-                                .cornerRadius(12)
+                        
+                        HStack(spacing: 10) {
+                            Button("Fetch Audio") {
+                                fetchLetterAudio()
+                            }
+                            .padding()
+                            .background(Color(hex: "#FFB74D"))
+                            .foregroundColor(.white)
+                            .cornerRadius(12)
+                            
+                            Button("Play Audio") {
+                                playLetterAudio()
+                            }
+                            .padding()
+                            .background(isLetterAudioFetched ? Color(hex: "#FFB74D") : Color.gray)
+                            .foregroundColor(.white)
+                            .cornerRadius(12)
+                            .disabled(!isLetterAudioFetched)
                         }
+                        
                         HStack(spacing: 20) {
                             ForEach(["b", "d", "w", "m"], id: \.self) { letter in
                                 Button(letter) {
@@ -304,7 +326,8 @@ struct ComprehensionSectionView: View {
                                 .foregroundColor(Color(hex: "#5D4037"))
                             }
                         }
-                        Button("Submit Letter") {
+                        
+                        Button("Submit Answer") {
                             submitLetterAnswer()
                         }
                         .buttonStyle(.borderedProminent)
@@ -322,6 +345,7 @@ struct ComprehensionSectionView: View {
         }
     }
     
+    // Question 1 functions.
     func fetchQuestionOneAudio() {
         isLoadingAudio = true
         BackendManager.getRequest(route: "/question_one") { data in
@@ -330,14 +354,13 @@ struct ComprehensionSectionView: View {
                 print("Failed to fetch question 1 audio.")
                 return
             }
-            print("Question 1 audio fetched: \(data.count) bytes")
             DispatchQueue.main.async {
                 do {
                     player = try AVAudioPlayer(data: data)
                     isAudioFetched = true
-                    print("Audio player ready.")
+                    print("Question 1 audio player ready.")
                 } catch {
-                    print("Error initializing AVAudioPlayer: \(error)")
+                    print("Error initializing AVAudioPlayer for question 1: \(error)")
                 }
             }
         }
@@ -345,7 +368,7 @@ struct ComprehensionSectionView: View {
     
     func playQuestionOneAudio() {
         guard let player = player else {
-            print("Audio not available yet.")
+            print("Audio not available yet for question 1.")
             return
         }
         player.play()
@@ -359,45 +382,84 @@ struct ComprehensionSectionView: View {
         }
     }
     
-    func playLetterAudio() {
-        BackendManager.fetchAudio(route: "/comprehension/letter") { data in
-            print("Played letter audio (dummy).")
+    // Letter Discrimination functions (Question 2).
+    func fetchLetterAudio() {
+        isLetterAudioLoading = true
+        BackendManager.getRequest(route: "/question_two") { data in
+            DispatchQueue.main.async {
+                self.isLetterAudioLoading = false
+                guard let data = data else {
+                    print("Failed to fetch letter discrimination audio.")
+                    return
+                }
+                do {
+                    try AVAudioSession.sharedInstance().setCategory(.playback, mode: .default)
+                    try AVAudioSession.sharedInstance().setActive(true)
+                    self.letterPlayer = try AVAudioPlayer(data: data)
+                    self.letterPlayer?.prepareToPlay()
+                    self.isLetterAudioFetched = true
+                    print("Letter discrimination audio player ready.")
+                } catch {
+                    print("Error initializing AVAudioPlayer for letter discrimination: \(error)")
+                }
+            }
         }
+    }
+    
+    func playLetterAudio() {
+        guard let letterPlayer = letterPlayer else {
+            print("Letter audio not available yet.")
+            return
+        }
+        letterPlayer.play()
+        print("Playing letter discrimination audio.")
     }
     
     func submitLetterAnswer() {
         guard let letter = selectedLetter else { return }
-        let payload = ["letter": letter]
-        BackendManager.submitAnswer(route: "/comprehension/gradeLetter", payload: payload) { success in
+        let payload = ["question_two_answer": letter]
+        BackendManager.postRequest(route: "/question_two", payload: payload) { success in
             print("Submitted letter answer: \(success)")
         }
     }
 }
 
-// MARK: - Section 2: Pronunciation
-struct PronunciationSectionView: View {
+// MARK: - Section 2: Reading Prompt (Record Your Answer)
+struct QuestionThreeSectionView: View {
     @Binding var currentSection: Int
+    @State private var questionPrompt: String = "Loading..."
+    @StateObject private var recorder = AudioRecorder()
     @State private var isRecording = false
-    let displayedWord = "Example" // Ideally fetched from backend.
-    
+
     var body: some View {
         CardView {
             VStack(spacing: 20) {
-                Text("Pronunciation")
+                Text("Section 2: Reading Prompt")
                     .font(.headline)
                     .foregroundColor(Color(hex: "#F57F17"))
-                Text("Read the word aloud. Tap 'Record' to capture your pronunciation.")
+                Text("Read the prompt below, then record yourself speaking the word.")
                     .font(.subheadline)
                     .foregroundColor(Color(hex: "#F9A825"))
-                Text(displayedWord)
+                
+                Text(questionPrompt)
                     .font(.largeTitle)
                     .fontWeight(.semibold)
                     .padding()
                 
+                // Record/Stop Button.
                 Button(action: {
-                    isRecording.toggle()
                     if !isRecording {
-                        submitPronunciationAudio()
+                        recorder.startRecording()
+                        isRecording = true
+                    } else {
+                        recorder.stopRecording { fileURL in
+                            if let url = fileURL {
+                                uploadRecording(fileURL: url)
+                            } else {
+                                print("Recording failed or file URL is unavailable.")
+                            }
+                            isRecording = false
+                        }
                     }
                 }) {
                     Label(isRecording ? "Stop" : "Record",
@@ -416,71 +478,12 @@ struct PronunciationSectionView: View {
                 .tint(Color(hex: "#FBC02D"))
             }
         }
-    }
-    
-    func submitPronunciationAudio() {
-        let payload = ["audio": "dummyAudioData"]
-        BackendManager.submitAnswer(route: "/pronunciation/grade", payload: payload) { success in
-            print("Submitted pronunciation audio: \(success)")
-        }
-    }
-}
-
-// MARK: - Section 3: Question Three (Recording)
-struct QuestionThreeSectionView: View {
-    @Binding var currentSection: Int
-    @State private var questionPrompt: String = "Loading..."
-    @StateObject private var recorder = AudioRecorder()
-    @State private var isRecording = false
-
-    var body: some View {
-        CardView {
-            VStack(spacing: 20) {
-                Text("Question 3: Record Your Answer")
-                    .font(.headline)
-                    .foregroundColor(Color(hex: "#F57F17"))
-                Text("Listen to the prompt below, then record yourself speaking the word.")
-                    .font(.subheadline)
-                    .foregroundColor(Color(hex: "#F9A825"))
-                
-                Text(questionPrompt)
-                    .font(.largeTitle)
-                    .fontWeight(.semibold)
-                    .padding()
-                
-                Button(action: {
-                    if !isRecording {
-                        recorder.startRecording()
-                    } else {
-                        recorder.stopRecording { fileURL in
-                            if let url = fileURL {
-                                uploadRecording(fileURL: url, endpoint: "/question_three")
-                            }
-                        }
-                    }
-                    isRecording.toggle()
-                }) {
-                    Label(isRecording ? "Stop" : "Record",
-                          systemImage: isRecording ? "stop.circle.fill" : "mic.fill")
-                        .font(.title2)
-                        .foregroundColor(.white)
-                        .padding()
-                        .background(isRecording ? Color(hex: "#FB8C00") : Color(hex: "#FFA726"))
-                        .cornerRadius(12)
-                }
-                
-                Button("Next Section") {
-                    currentSection = 4
-                }
-                .buttonStyle(.borderedProminent)
-                .tint(Color(hex: "#FBC02D"))
-            }
-        }
         .onAppear {
             fetchQuestionPrompt()
         }
     }
     
+    // Fetch the word prompt from /question_three.
     func fetchQuestionPrompt() {
         BackendManager.getRequest(route: "/question_three") { data in
             guard let data = data else {
@@ -497,45 +500,55 @@ struct QuestionThreeSectionView: View {
                     print("Invalid JSON format for question 3 prompt.")
                 }
             } catch {
-                print("Error parsing JSON: \(error)")
+                print("Error parsing JSON for question 3: \(error)")
             }
         }
     }
     
-    func uploadRecording(fileURL: URL, endpoint: String) {
-        guard let url = URL(string: "\(BackendManager.baseURL)\(endpoint)") else {
+    // Upload the recorded audio to /question_three.
+    func uploadRecording(fileURL: URL) {
+        guard let url = URL(string: "\(BackendManager.baseURL)/question_three") else {
             print("Invalid URL for uploading recording.")
             return
         }
+        
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
+        
         let boundary = "Boundary-\(UUID().uuidString)"
         request.setValue("multipart/form-data; boundary=\(boundary)", forHTTPHeaderField: "Content-Type")
         
         var body = Data()
         let filename = fileURL.lastPathComponent
         let mimeType = "audio/m4a"
+        
         body.append("--\(boundary)\r\n")
         body.append("Content-Disposition: form-data; name=\"audio\"; filename=\"\(filename)\"\r\n")
         body.append("Content-Type: \(mimeType)\r\n\r\n")
-        if let fileData = try? Data(contentsOf: fileURL) {
+        
+        do {
+            let fileData = try Data(contentsOf: fileURL)
             body.append(fileData)
+        } catch {
+            print("Error reading audio file data: \(error)")
+            return
         }
+        
         body.append("\r\n")
         body.append("--\(boundary)--\r\n")
         request.httpBody = body
         
         URLSession.shared.dataTask(with: request) { _, _, error in
             if let error = error {
-                print("Error uploading recording to \(endpoint): \(error)")
+                print("Error uploading recording: \(error)")
                 return
             }
-            print("Recording uploaded successfully for \(endpoint).")
+            print("Recording uploaded successfully for question three.")
         }.resume()
     }
 }
 
-// MARK: - Section 4: Waveform Analysis (New)
+// MARK: - Section 3: Waveform Analysis
 struct WaveformSectionView: View {
     @Binding var currentSection: Int
     @State private var questionPrompt: String = "Loading..."
@@ -545,7 +558,7 @@ struct WaveformSectionView: View {
     var body: some View {
         CardView {
             VStack(spacing: 20) {
-                Text("Question 4: Record Waveform")
+                Text("Section 3: Record Waveform")
                     .font(.headline)
                     .foregroundColor(Color(hex: "#F57F17"))
                 Text("Record your waveform for analysis.")
@@ -560,15 +573,15 @@ struct WaveformSectionView: View {
                 Button(action: {
                     if !isRecording {
                         recorder.startRecording()
+                        isRecording = true
                     } else {
                         recorder.stopRecording { fileURL in
                             if let url = fileURL {
-                                // Upload to /question_four endpoint
                                 uploadRecording(fileURL: url, endpoint: "/question_four")
                             }
                         }
+                        isRecording = false
                     }
-                    isRecording.toggle()
                 }) {
                     Label(isRecording ? "Stop" : "Record",
                           systemImage: isRecording ? "stop.circle.fill" : "mic.fill")
@@ -580,7 +593,7 @@ struct WaveformSectionView: View {
                 }
                 
                 Button("Next Section") {
-                    currentSection = 5
+                    currentSection = 4
                 }
                 .buttonStyle(.borderedProminent)
                 .tint(Color(hex: "#FBC02D"))
@@ -607,7 +620,7 @@ struct WaveformSectionView: View {
                     print("Invalid JSON format for question 4 prompt.")
                 }
             } catch {
-                print("Error parsing JSON: \(error)")
+                print("Error parsing JSON for question 4: \(error)")
             }
         }
     }
@@ -645,39 +658,38 @@ struct WaveformSectionView: View {
     }
 }
 
-// MARK: - Section 5: Handwriting (Unchanged)
+// MARK: - Section 4: Handwriting
 struct HandwritingSectionView: View {
     @Binding var currentSection: Int
+    @State private var phrase: String = "Loading..."
     @State private var capturedImage: Image? = nil
-    let sentenceToWrite = "The quick brown fox jumps over the lazy dog." // Example sentence.
-    
+    @State private var capturedImageURL: URL? = nil
+
     var body: some View {
         ScrollView {
             VStack(spacing: 20) {
                 CardView {
                     VStack(spacing: 16) {
-                        Text("Handwriting")
+                        Text("Section 4: Handwriting")
                             .font(.headline)
                             .foregroundColor(Color(hex: "#F57F17"))
-                        Text("Listen to the sentence and write it by hand. Then take a picture.")
+                        Text("Please write the following phrase by hand, then take a picture of your handwriting.")
                             .font(.subheadline)
                             .foregroundColor(Color(hex: "#F9A825"))
-                        Text(sentenceToWrite)
+                        Text(phrase)
                             .font(.body)
                             .padding()
                         
-                        Button(action: playHandwritingAudio) {
-                            Label("Play Sentence", systemImage: "speaker.wave.2.fill")
+                        Button(action: playQuestionFiveAudio) {
+                            Label("Play Phrase Audio", systemImage: "speaker.wave.2.fill")
                                 .font(.title2)
                                 .foregroundColor(.white)
                                 .padding()
                                 .background(Color(hex: "#FFB74D"))
                                 .cornerRadius(12)
                         }
-                        Button(action: {
-                            // In a real app, launch camera/image picker.
-                            capturedImage = Image(systemName: "photo")
-                        }) {
+                        
+                        Button(action: captureImage) {
                             Label("Take Picture", systemImage: "camera.fill")
                                 .font(.title2)
                                 .foregroundColor(.white)
@@ -710,23 +722,88 @@ struct HandwritingSectionView: View {
             }
             .padding(.vertical)
         }
+        .onAppear {
+            fetchPhrase()
+        }
     }
     
-    func playHandwritingAudio() {
-        BackendManager.fetchAudio(route: "/handwriting/audio") { data in
-            print("Played handwriting audio.")
+    func fetchPhrase() {
+        BackendManager.getRequest(route: "/question_five") { data in
+            guard let data = data else {
+                print("Failed to fetch phrase for question 5.")
+                return
+            }
+            do {
+                if let jsonObject = try JSONSerialization.jsonObject(with: data, options: []) as? [String: Any],
+                   let fetchedPhrase = jsonObject["phrase"] as? String {
+                    DispatchQueue.main.async {
+                        phrase = fetchedPhrase
+                    }
+                } else {
+                    print("Invalid JSON format for question 5 phrase.")
+                }
+            } catch {
+                print("Error parsing JSON for question 5: \(error)")
+            }
+        }
+    }
+    
+    func playQuestionFiveAudio() {
+        print("Playing question 5 phrase audio (if implemented).")
+    }
+    
+    func captureImage() {
+        let tempDir = FileManager.default.temporaryDirectory
+        let fileURL = tempDir.appendingPathComponent("dummy_handwriting.jpg")
+        if let dummyData = "dummyImageData".data(using: .utf8) {
+            do {
+                try dummyData.write(to: fileURL)
+                capturedImageURL = fileURL
+                capturedImage = Image(systemName: "photo")
+                print("Simulated image captured at \(fileURL)")
+            } catch {
+                print("Error writing dummy image data: \(error)")
+            }
         }
     }
     
     func submitHandwritingImage() {
-        let payload = ["image": "dummyImageData"]
-        BackendManager.submitAnswer(route: "/handwriting/grade", payload: payload) { success in
-            print("Submitted handwriting image: \(success)")
+        guard let fileURL = capturedImageURL else {
+            print("No image captured.")
+            return
         }
+        guard let url = URL(string: "\(BackendManager.baseURL)/question_five") else {
+            print("Invalid URL for uploading handwriting image.")
+            return
+        }
+        
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        let boundary = "Boundary-\(UUID().uuidString)"
+        request.setValue("multipart/form-data; boundary=\(boundary)", forHTTPHeaderField: "Content-Type")
+        
+        var body = Data()
+        let filename = fileURL.lastPathComponent
+        let mimeType = "image/jpeg"
+        body.append("--\(boundary)\r\n")
+        body.append("Content-Disposition: form-data; name=\"image\"; filename=\"\(filename)\"\r\n")
+        body.append("Content-Type: \(mimeType)\r\n\r\n")
+        if let fileData = try? Data(contentsOf: fileURL) {
+            body.append(fileData)
+        }
+        body.append("\r\n")
+        body.append("--\(boundary)--\r\n")
+        request.httpBody = body
+        
+        URLSession.shared.dataTask(with: request) { _, _, error in
+            if let error = error {
+                print("Error uploading handwriting image: \(error)")
+                return
+            }
+            print("Handwriting image uploaded successfully for question 5.")
+        }.resume()
     }
 }
-
-
 
 // MARK: - Preview
 struct TestView_Previews: PreviewProvider {

@@ -72,7 +72,7 @@ struct ContentView: View {
 
 func goTest() {
     if let window = UIApplication.shared.windows.first {
-        window.rootViewController = UIHostingController(rootView: DashboardView())
+        window.rootViewController = UIHostingController(rootView: DashboardView(username: globalUsername, className: globalClassName))
         window.makeKeyAndVisible()
     }
 }
