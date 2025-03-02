@@ -1,8 +1,6 @@
 import SwiftUI
 
-
 // MARK: - Data Model
-
 struct TestRecord: Identifiable, Codable {
     let test_id: Int
     let username: String
@@ -23,14 +21,13 @@ struct TestRecord: Identifiable, Codable {
     enum CodingKeys: String, CodingKey {
         case test_id
         case username
-        case className = "class"  // Maps JSON "class" to Swift property className
+        case className = "class"
         case question1, question2, question3, question4, question5
         case spelling_accuracy, stutter_metric, speaking_accuracy, handwriting_metric, total_score
     }
 }
 
 // MARK: - VerticalBarView
-/// A vertical bar showing a percentage metric with label and numeric value.
 struct VerticalBarView: View {
     let progress: CGFloat  // 0...1
     let color: Color
@@ -61,7 +58,6 @@ struct VerticalBarView: View {
 }
 
 // MARK: - AestheticLineChartView
-/// A line chart with gradient fill under the line, plus data point circles.
 struct AestheticLineChartView: View {
     let dataPoints: [Double]
     let title: String
@@ -75,21 +71,34 @@ struct AestheticLineChartView: View {
             
             GeometryReader { geo in
                 ZStack {
-                    // The fill area under the line
+                    // Fill area under the line
                     if dataPoints.count > 1 {
                         createClosedPath(in: geo)
                             .fill(
                                 LinearGradient(
-                                    gradient: Gradient(colors: [lineColor.opacity(0.3), .clear]),
+                                    gradient: Gradient(colors: [
+                                        lineColor.opacity(0.3),
+                                        .clear
+                                    ]),
                                     startPoint: .top,
                                     endPoint: .bottom
                                 )
                             )
                     }
                     
-                    // The stroked line
+                    // Gradient-stroked line
                     createLinePath(in: geo)
-                        .stroke(lineColor, style: StrokeStyle(lineWidth: 3, lineCap: .round, lineJoin: .round))
+                        .stroke(
+                            LinearGradient(
+                                gradient: Gradient(colors: [
+                                    lineColor.opacity(0.85),
+                                    lineColor.opacity(0.4)
+                                ]),
+                                startPoint: .leading,
+                                endPoint: .trailing
+                            ),
+                            style: StrokeStyle(lineWidth: 3, lineCap: .round, lineJoin: .round)
+                        )
                     
                     // Data point circles
                     if dataPoints.count > 1 {
@@ -97,26 +106,43 @@ struct AestheticLineChartView: View {
                             let (x, y) = pointPosition(in: geo, index: index)
                             Circle()
                                 .fill(lineColor)
-                                .frame(width: 8, height: 8)
+                                .frame(width: 9, height: 9)
                                 .position(x: x, y: y)
+                                .shadow(color: .black.opacity(0.15), radius: 2, x: 0, y: 1)
                         }
                     }
                 }
-                .background(Color.white)
-                .cornerRadius(6)
-                .shadow(radius: 2)
+                // Pastel background for the chart
+                .background(
+                    LinearGradient(
+                        gradient: Gradient(colors: [
+                            Color(hex: "#FFFCE8"),
+                            Color(hex: "#F3E5F5").opacity(0.35)
+                        ]),
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    )
+                    .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                    // Optional stroke
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 12)
+                            .stroke(lineColor.opacity(0.3), lineWidth: 1)
+                    )
+                )
+                .shadow(color: .black.opacity(0.08), radius: 4, x: 0, y: 2)
             }
-            .frame(height: 250) // bigger chart
+            .frame(height: 240)
         }
         .padding(8)
     }
     
-    /// Creates a path for just the line (without closing).
+    // MARK: - Path Helpers
+    
     private func createLinePath(in geo: GeometryProxy) -> Path {
         var path = Path()
         guard dataPoints.count > 1 else { return path }
         
-        let width = geo.size.width
+        let width  = geo.size.width
         let height = geo.size.height
         let (minVal, maxVal) = minMax()
         let range = maxVal - minVal == 0 ? 1 : (maxVal - minVal)
@@ -124,7 +150,8 @@ struct AestheticLineChartView: View {
         
         for (index, value) in dataPoints.enumerated() {
             let x = CGFloat(index) * step
-            let y = height - ((CGFloat(value - minVal) / range) * height)
+            let y = height - ((CGFloat(value - minVal) / CGFloat(range)) * height)
+            
             if index == 0 {
                 path.move(to: CGPoint(x: x, y: y))
             } else {
@@ -134,40 +161,33 @@ struct AestheticLineChartView: View {
         return path
     }
     
-    /// Creates a closed path for filling under the line.
     private func createClosedPath(in geo: GeometryProxy) -> Path {
         var path = createLinePath(in: geo)
-        // Close the shape by drawing down to the bottom edge, then back to start.
         path.addLine(to: CGPoint(x: geo.size.width, y: geo.size.height))
         path.addLine(to: CGPoint(x: 0, y: geo.size.height))
         path.closeSubpath()
         return path
     }
     
-    /// Helper to get min/max of dataPoints
-    private func minMax() -> (Double, Double) {
-        let minVal = dataPoints.min() ?? 0
-        let maxVal = dataPoints.max() ?? 1
-        return (minVal, maxVal)
-    }
-    
-    /// Returns the (x, y) coordinate of a data point circle.
     private func pointPosition(in geo: GeometryProxy, index: Int) -> (CGFloat, CGFloat) {
-        let width = geo.size.width
+        let width  = geo.size.width
         let height = geo.size.height
         let (minVal, maxVal) = minMax()
         let range = maxVal - minVal == 0 ? 1 : (maxVal - minVal)
         let step = width / CGFloat(dataPoints.count - 1)
-        
         let value = dataPoints[index]
+        
         let x = CGFloat(index) * step
-        let y = height - ((CGFloat(value - minVal) / range) * height)
+        let y = height - ((CGFloat(value - minVal) / CGFloat(range)) * height)
         return (x, y)
+    }
+    
+    private func minMax() -> (Double, Double) {
+        (dataPoints.min() ?? 0, dataPoints.max() ?? 1)
     }
 }
 
 // MARK: - DashboardView
-
 struct DashboardView: View {
     let username: String
     let className: String
@@ -176,7 +196,7 @@ struct DashboardView: View {
     @State private var isLoading: Bool = false
     @State private var errorMessage: String? = nil
     
-    // Average calculations
+    // Averages
     private var avgTotalScore: Double {
         let scores = testRecords.compactMap { $0.total_score }
         return scores.isEmpty ? 0 : scores.reduce(0, +) / Double(scores.count)
@@ -202,131 +222,141 @@ struct DashboardView: View {
     private var handwritingTrend: [Double] { testRecords.compactMap { $0.handwriting_metric } }
     
     var body: some View {
-        NavigationView {
-            ZStack {
-                // Warm gradient background
-                LinearGradient(
-                    gradient: Gradient(colors: [Color(hex: "#FFF9C4"), Color(hex: "#FFD54F")]),
-                    startPoint: .top,
-                    endPoint: .bottom
-                )
-                .edgesIgnoringSafeArea(.all)
-                
-                if isLoading {
-                    ProgressView("Loading data...")
-                } else if let error = errorMessage {
-                    Text("Error: \(error)")
-                        .foregroundColor(.red)
-                        .padding()
-                } else {
-                    ScrollView {
-                        VStack(alignment: .leading, spacing: 24) {
-                            // Greeting
-                            Text("Hello, \(username)")
-                                .font(.largeTitle)
-                                .fontWeight(.bold)
-                                .padding(.top)
-                                .padding(.horizontal)
-                            
-                            Text("Class: \(className)")
-                                .font(.title2)
-                                .padding(.horizontal)
-                            
-                            // 4 vertical bars
-                            ScrollView(.horizontal, showsIndicators: false) {
-                                HStack {
-                                    VerticalBarView(
-                                        progress: totalScoreProgress,
-                                        color: .red,
-                                        label: "Total Score",
-                                        valueText: "\(Int(avgTotalScore))%"
-                                    )
-                                    VerticalBarView(
-                                        progress: comprehensionProgress,
-                                        color: .green,
-                                        label: "Comprehension",
-                                        valueText: "\(Int(avgSpelling))%"
-                                    )
-                                    VerticalBarView(
-                                        progress: handwritingProgress,
-                                        color: .blue,
-                                        label: "Handwriting",
-                                        valueText: "\(Int(avgHandwriting))%"
-                                    )
-                                    VerticalBarView(
-                                        progress: confusionProgress,
-                                        color: .gray,
-                                        label: "Confusion",
-                                        valueText: "\(Int(100 - avgTotalScore))%"
-                                    )
-                                }
-                                .padding(.horizontal)
-                            }
-                            
-                            // Trends Section
-                            if !testRecords.isEmpty {
-                                VStack(alignment: .leading, spacing: 16) {
-                                    Text("Trends")
-                                        .font(.headline)
-                                        .padding(.horizontal)
-                                    
-                                    // Larger, more aesthetic line charts
-                                    if !totalScoreTrend.isEmpty {
-                                        AestheticLineChartView(
-                                            dataPoints: totalScoreTrend,
-                                            title: "Total Score Trend",
-                                            lineColor: .red
-                                        )
-                                        .padding(.horizontal)
-                                    }
-                                    if !spellingTrend.isEmpty {
-                                        AestheticLineChartView(
-                                            dataPoints: spellingTrend,
-                                            title: "Spelling Trend",
-                                            lineColor: .green
-                                        )
-                                        .padding(.horizontal)
-                                    }
-                                    if !handwritingTrend.isEmpty {
-                                        AestheticLineChartView(
-                                            dataPoints: handwritingTrend,
-                                            title: "Handwriting Trend",
-                                            lineColor: .blue
-                                        )
-                                        .padding(.horizontal)
-                                    }
-                                }
-                            } else {
-                                Text("No records found for this user/class.")
-                                    .foregroundColor(.gray)
-                                    .padding(.horizontal)
-                            }
-                            
-                            // "Take Test" Button
-                            Button(action: {
-                                // Implement test-taking logic
-                            }) {
-                                Text("Take Test")
-                                    .font(.headline)
-                                    .foregroundColor(.white)
-                                    .padding()
-                                    .frame(maxWidth: .infinity)
-                                    .background(Color.blue)
-                                    .cornerRadius(10)
+        ZStack {
+            // Warm gradient background
+            LinearGradient(
+                gradient: Gradient(colors: [
+                    Color(hex: "#FFF9C4"),
+                    Color(hex: "#FFD54F")
+                ]),
+                startPoint: .top,
+                endPoint: .bottom
+            )
+            .edgesIgnoringSafeArea(.all)
+            
+            if isLoading {
+                ProgressView("Loading data...")
+            } else if let error = errorMessage {
+                Text("Error: \(error)")
+                    .foregroundColor(.red)
+                    .padding()
+            } else {
+                ScrollView {
+                    VStack(spacing: 20) {
+                        // Logo at the top
+                        Image("koala_logo_v1") // <--- Replace with your actual logo asset name
+                            .resizable()
+                            .scaledToFit()
+                            .frame(width: 120, height: 120)
+                            .padding(.top, 20)
+                        
+                        // Titles
+                        Text("Hello, \(username)")
+                            .font(.system(size: 34, weight: .heavy, design: .default))
+                            .foregroundColor(.brown)
+                            .multilineTextAlignment(.center)
+                        
+                        Text("Class: \(className)")
+                            .font(.title3)
+                            .foregroundColor(.brown.opacity(0.8))
+                        
+                        // The "Take Test" button near the top
+                        NavigationLink(destination: TestView()) {
+                            Text("Take Test")
+                                .font(.title3)
+                                .foregroundColor(.white)
+                                .padding(.horizontal, 32)
+                                .padding(.vertical, 12)
+                                .background(Color.blue)
+                                .cornerRadius(12)
+                        }
+                        
+                        // A small divider or spacing
+                        Divider()
+                            .padding(.horizontal, 50)
+                            .padding(.top, 10)
+                        
+                        // Horizontal bar set
+                        ScrollView(.horizontal, showsIndicators: false) {
+                            HStack {
+                                VerticalBarView(
+                                    progress: totalScoreProgress,
+                                    color: .red,
+                                    label: "Total Score",
+                                    valueText: "\(Int(avgTotalScore))%"
+                                )
+                                VerticalBarView(
+                                    progress: comprehensionProgress,
+                                    color: .green,
+                                    label: "Comprehension",
+                                    valueText: "\(Int(avgSpelling))%"
+                                )
+                                VerticalBarView(
+                                    progress: handwritingProgress,
+                                    color: .blue,
+                                    label: "Handwriting",
+                                    valueText: "\(Int(avgHandwriting))%"
+                                )
+                                VerticalBarView(
+                                    progress: confusionProgress,
+                                    color: .gray,
+                                    label: "Confusion",
+                                    valueText: "\(Int(100 - avgTotalScore))%"
+                                )
                             }
                             .padding(.horizontal)
-                            .padding(.vertical, 10)
-                            
-                            Spacer()
                         }
-                        .padding(.bottom, 20)
+                        
+                        // Trends Section
+                        if !testRecords.isEmpty {
+                            VStack(alignment: .leading, spacing: 16) {
+                                Text("Trends")
+                                    .font(.headline)
+                                    .foregroundColor(.brown)
+                                    .padding(.horizontal)
+                                
+                                if !totalScoreTrend.isEmpty {
+                                    AestheticLineChartView(
+                                        dataPoints: totalScoreTrend,
+                                        title: "Total Score Trend",
+                                        lineColor: .red
+                                    )
+                                    .padding(.horizontal)
+                                }
+                                if !spellingTrend.isEmpty {
+                                    AestheticLineChartView(
+                                        dataPoints: spellingTrend,
+                                        title: "Spelling Trend",
+                                        lineColor: .green
+                                    )
+                                    .padding(.horizontal)
+                                }
+                                if !handwritingTrend.isEmpty {
+                                    AestheticLineChartView(
+                                        dataPoints: handwritingTrend,
+                                        title: "Handwriting Trend",
+                                        lineColor: .blue
+                                    )
+                                    .padding(.horizontal)
+                                }
+                            }
+                            .transition(.slide)
+                        } else {
+                            Text("No records found for this user/class.")
+                                .foregroundColor(.gray)
+                                .padding(.horizontal)
+                        }
+                        
+                        Spacer()
                     }
+                    .padding(.bottom, 30)
                 }
             }
-            .navigationTitle("Dashboard")
-            .onAppear {
-                fetchData()
-            }
+        }
+        .navigationBarTitle("Dashboard", displayMode: .inline)
+        .navigationBarBackButtonHidden(true)
+        .onAppear {
+            fetchData()
         }
     }
     
@@ -374,9 +404,9 @@ struct DashboardView: View {
 }
 
 // MARK: - Preview
-
 struct DashboardView_Previews: PreviewProvider {
     static var previews: some View {
         DashboardView(username: globalUsername, className: globalClassName)
     }
 }
+

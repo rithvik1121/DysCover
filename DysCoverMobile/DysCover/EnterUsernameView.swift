@@ -2,7 +2,8 @@ import SwiftUI
 
 struct EnterUsernameView: View {
     @State private var localUsername: String = ""
-    @State private var navigateToTestView: Bool = false
+    @State private var localClassName: String = ""
+    @State private var navigateToDashboardView: Bool = false
 
     var body: some View {
         NavigationView {
@@ -23,23 +24,34 @@ struct EnterUsernameView: View {
                         .multilineTextAlignment(.center)
                         .padding(.top, 40)
 
+                    // Username Field
                     TextField("Enter your username", text: $localUsername)
+                        .padding()
+                        .background(Color(hex: "#FFFDE7").opacity(0.8))
+                        .cornerRadius(8)
+                        .padding(.horizontal)
+                    
+                    // Class Name Field
+                    TextField("Enter your class name", text: $localClassName)
                         .padding()
                         .background(Color(hex: "#FFFDE7").opacity(0.8))
                         .cornerRadius(8)
                         .padding(.horizontal)
 
                     Button("Continue") {
-                        if !localUsername.isEmpty {
-                            globalUsername = localUsername   // ✅ Update globalUsername
-                            navigateToTestView = true        // ✅ Navigate to TestView
+                        // Only proceed if both fields are non-empty
+                        if !localUsername.isEmpty && !localClassName.isEmpty {
+                            globalUsername = localUsername
+                            globalClassName = localClassName
+                            navigateToDashboardView = true
                         }
                     }
                     .buttonStyle(.borderedProminent)
                     .tint(Color(hex: "#FBC02D"))
+                    .padding(.bottom, 20)
 
-                    // Navigate to TestView after entering username
-                    NavigationLink(destination: TestView(), isActive: $navigateToTestView) {
+                    // NavigationLink to TestView
+                    NavigationLink(destination: DashboardView(username: globalUsername, className: globalClassName), isActive: $navigateToDashboardView) {
                         EmptyView()
                     }
                 }
@@ -54,3 +66,5 @@ struct EnterUsernameView_Previews: PreviewProvider {
         EnterUsernameView()
     }
 }
+
+
