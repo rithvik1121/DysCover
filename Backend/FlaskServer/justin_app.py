@@ -1,7 +1,7 @@
 from flask import Flask, request, send_file, jsonify, g
 from text_to_speech import create_audio
 from speech_to_text import transcribe_audio
-from data.words import TESTING_WORDS
+from data.words import QUESTION_ONE_WORDS, QUESTION_THREE_WORDS, QUESTION_FOUR_WORDS, QUESTION_FIVE_PHRASES
 import os
 import random
 import pandas as pd
@@ -107,14 +107,14 @@ def start_test():
     username = data['username']
     print(username)
     #fix this to reset frame values
-    user_dataframe.iloc[0:0]  
+    user_dataframe.drop(user_dataframe.index, inplace=True)
     user_dataframe.loc[0, user_dataframe.columns[0]] = username
     print(user_dataframe.head())
     return jsonify({'message': f'User {username} started successfully'}), 200 
 
 @app.route('/question_one', methods=['GET'])
 def question_one_get():
-    word = random.choice(TESTING_WORDS).lower()
+    word = random.choice(QUESTION_ONE_WORDS).lower()
     CORRECT_ANSWER["question1"] = word
     audio_path = create_audio(app, word, "word.mp3")
     print(audio_path)
@@ -166,7 +166,6 @@ def question_two_post():
     print(user_dataframe.head())
     return jsonify({'message': f'Question 2 graded successfully!'}), 200
 
-QUESTION_THREE_WORDS = ["orange", "banana", "triangle"]
 @app.route('/question_three', methods=['GET'])
 def question_three_get():
     word = random.choice(QUESTION_THREE_WORDS)
@@ -190,7 +189,6 @@ def question_three_post():
     return jsonify({'message': 'Question 3 audio received successfully'}), 200
 
 
-QUESTION_FOUR_WORDS = ["abracadabra", "mexico", "giraffe"]
 @app.route('/question_four', methods=['GET'])
 def question_four_get():
     word = random.choice(QUESTION_FOUR_WORDS)
@@ -216,7 +214,6 @@ def question_four_post():
     return jsonify({'message': 'Question 3 audio received successfully'}), 200
     
     
-QUESTION_FIVE_PHRASES = ["Hello World", "I love Koalas", "Learning is fun"]
 @app.route('/question_five', methods=['GET'])
 def question_five_get():
     phrase = random.choice(QUESTION_FIVE_PHRASES)
