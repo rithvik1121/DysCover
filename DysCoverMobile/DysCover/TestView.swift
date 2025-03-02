@@ -1,5 +1,6 @@
 import SwiftUI
 import AVFoundation
+import PhotosUI
 
 // MARK: - BackendManager
 class BackendManager {
@@ -152,7 +153,6 @@ extension Data {
 }
 
 // MARK: - TestView (Main Entry)
-// Wrap everything in NavigationView so the Finish Test button's NavigationLink works
 struct TestView: View {
     @State private var didBeginTest = false
     @State private var isLoading = false
@@ -174,7 +174,6 @@ struct TestView: View {
                 )
                 .ignoresSafeArea()
                 
-                // Pre-Test vs. Active Test
                 if !didBeginTest {
                     // Pre-Test Screen
                     VStack(spacing: 40) {
@@ -213,7 +212,6 @@ struct TestView: View {
                     }
                     .padding()
                     .transition(.opacity)
-                    
                 } else {
                     // Test in Progress
                     VStack(spacing: 20) {
@@ -283,10 +281,10 @@ struct TestView: View {
                 }
                 .hidden()
             )
-            .navigationBarTitleDisplayMode(.inline)  // Keep the bar subtle
+            .navigationBarTitleDisplayMode(.inline)
             .navigationBarHidden(true)
         }
-        .navigationViewStyle(StackNavigationViewStyle()) // For consistent style on iPhone/iPad
+        .navigationViewStyle(StackNavigationViewStyle())
     }
     
     private func beginTest() {
@@ -325,6 +323,7 @@ struct TestView: View {
 }
 
 // MARK: - SECTION 1: Comprehension (Questions 1 & 2)
+// ADJUSTED so the text field is never covered by the keyboard:
 struct ComprehensionSectionView: View {
     @Binding var currentSection: Int
     
@@ -339,6 +338,7 @@ struct ComprehensionSectionView: View {
     @State private var selectedLetter: String? = nil
     
     var body: some View {
+        // Use a ScrollView with extra bottom padding to avoid keyboard overlap
         ScrollView {
             VStack(spacing: 30) {
                 // Question 1 Card
@@ -430,11 +430,14 @@ struct ComprehensionSectionView: View {
                 .padding(.bottom, 10)
             }
             .padding(.vertical, 15)
+            .padding(.bottom, 150) // Extra space so keyboard doesn't obscure the text field
         }
         .onAppear {
             fetchQ1Audio()
             fetchQ2Audio()
         }
+        // This helps to dismiss the keyboard if the user scrolls or taps away
+        .scrollDismissesKeyboard(.interactively)
     }
     
     // Q1 Audio
@@ -470,7 +473,6 @@ struct ComprehensionSectionView: View {
     
     // Q2 Audio
     private func fetchQ2Audio() {
-        // Using your existing endpoint /question_two
         BackendManager.fetchAudio(route: "/question_two") { data in
             guard let data = data else {
                 print("Failed to fetch Q2 letter audio.")
@@ -762,6 +764,7 @@ struct WaveformSectionView: View {
 }
 
 // MARK: - SECTION 4: Handwriting
+// REPLACED the "captureImage()" with a real Image Picker flow:
 struct HandwritingSectionView: View {
     @Binding var currentSection: Int
     
@@ -771,9 +774,12 @@ struct HandwritingSectionView: View {
     @State private var question5Player: AVAudioPlayer?
     @State private var isQ5AudioReady = false
     
-    // We'll store the temporary file URL to auto-upload once an image is captured
-    @State private var capturedImage: Image? = nil
-    @State private var capturedImageURL: URL? = nil
+    // The image the user picks or takes
+    @State private var inputUIImage: UIImage?
+    @State private var capturedImage: Image?
+    
+    // Whether to show the image picker
+    @State private var isShowingImagePicker = false
     
     var body: some View {
         CardView {
@@ -803,11 +809,11 @@ struct HandwritingSectionView: View {
                 }
                 .disabled(!isQ5AudioReady)
                 
-                // Simulate taking a picture
+                // Actual camera or photo library
                 Button {
-                    captureImage()
+                    isShowingImagePicker = true
                 } label: {
-                    Label("Take Picture", systemImage: "camera.fill")
+                    Label("Take/Choose Picture", systemImage: "camera.fill")
                         .font(.body)
                         .foregroundColor(.white)
                         .padding(.vertical, 8)
@@ -816,8 +822,8 @@ struct HandwritingSectionView: View {
                         .cornerRadius(10)
                 }
                 
-                if let image = capturedImage {
-                    image
+                if let capturedImage = capturedImage {
+                    capturedImage
                         .resizable()
                         .scaledToFit()
                         .frame(height: 220)
@@ -829,16 +835,19 @@ struct HandwritingSectionView: View {
             fetchPhrase()
             fetchQ5Audio()  // fetch audio for Q5 route
         }
+        // Present the image picker as a sheet
+        .sheet(isPresented: $isShowingImagePicker, onDismiss: loadImage) {
+            ImagePicker(selectedImage: $inputUIImage)
+        }
     }
     
-    // 1) Fetch the phrase from /question_five (assuming it returns JSON with "phrase")
+    // 1) Fetch the phrase from /question_five
     private func fetchPhrase() {
         BackendManager.getRequest(route: "/question_five") { data in
             guard let data = data else {
                 print("Failed to fetch Q5 phrase data.")
                 return
             }
-            // Attempt to parse JSON to get "phrase"
             do {
                 if let jsonObject = try JSONSerialization.jsonObject(with: data, options: []) as? [String: Any],
                    let fetchedPhrase = jsonObject["phrase"] as? String {
@@ -881,30 +890,28 @@ struct HandwritingSectionView: View {
         print("Playing Q5 audio.")
     }
     
-    // Simulate capture from assets
-    private func captureImage() {
-        if let uiImage = UIImage(named: "apple_handwriting") {
+    // Called when the image picker is dismissed
+    private func loadImage() {
+        guard let uiImage = inputUIImage else { return }
+        // Display the image in SwiftUI
+        capturedImage = Image(uiImage: uiImage)
+        
+        // Convert to Data & upload
+        do {
+            let tempURL = FileManager.default.temporaryDirectory
+                .appendingPathComponent(UUID().uuidString + ".jpg")
+            
             if let jpegData = uiImage.jpegData(compressionQuality: 0.8) {
-                let tempDir = FileManager.default.temporaryDirectory
-                let fileURL = tempDir.appendingPathComponent("apple_handwriting.jpg")
-                do {
-                    try jpegData.write(to: fileURL)
-                    capturedImageURL = fileURL
-                    capturedImage = Image(uiImage: uiImage)
-                    print("Captured image. Uploading automatically…")
-                    submitHandwritingImage(fileURL: fileURL)
-                } catch {
-                    print("Error writing handwriting image data: \(error)")
-                }
-            } else {
-                print("Failed to convert handwriting asset to JPEG.")
+                try jpegData.write(to: tempURL)
+                print("Image saved to temp URL: \(tempURL)")
+                submitHandwritingImage(fileURL: tempURL)
             }
-        } else {
-            print("No 'apple_handwriting' asset found.")
+        } catch {
+            print("Error writing captured image to disk: \(error)")
         }
     }
     
-    // Auto-upload once image is captured
+    // Upload the user-chosen or camera-taken image
     private func submitHandwritingImage(fileURL: URL) {
         guard let url = URL(string: "\(BackendManager.baseURL)/question_five") else {
             print("Invalid Q5 upload URL.")
@@ -943,10 +950,59 @@ struct HandwritingSectionView: View {
     }
 }
 
+// MARK: - ImagePicker for SwiftUI
+// A simple UIViewControllerRepresentable that supports camera or photo library
+struct ImagePicker: UIViewControllerRepresentable {
+    @Environment(\.presentationMode) var presentationMode
+    @Binding var selectedImage: UIImage?
+    
+    func makeUIViewController(context: Context) -> UIImagePickerController {
+        let picker = UIImagePickerController()
+        
+        // If you want the camera only, set .sourceType = .camera
+        // For letting user choose library or camera, you might build a custom sheet or system UI.
+        // Here, we do the photoLibrary as an example:
+        picker.sourceType = .camera // or .photoLibrary
+        picker.delegate = context.coordinator
+        
+        return picker
+    }
+    
+    func updateUIViewController(_ uiViewController: UIImagePickerController, context: Context) {
+        // no-op
+    }
+    
+    func makeCoordinator() -> Coordinator {
+        Coordinator(self)
+    }
+    
+    // Coordinator to handle delegate methods
+    class Coordinator: NSObject, UIImagePickerControllerDelegate, UINavigationControllerDelegate {
+        let parent: ImagePicker
+        
+        init(_ parent: ImagePicker) {
+            self.parent = parent
+        }
+        
+        func imagePickerController(_ picker: UIImagePickerController,
+                                   didFinishPickingMediaWithInfo info: [UIImagePickerController.InfoKey : Any]) {
+            if let uiImage = info[.originalImage] as? UIImage {
+                parent.selectedImage = uiImage
+            }
+            parent.presentationMode.wrappedValue.dismiss()
+        }
+        
+        func imagePickerControllerDidCancel(_ picker: UIImagePickerController) {
+            parent.presentationMode.wrappedValue.dismiss()
+        }
+    }
+}
+
 // MARK: - Preview
 struct TestView_Previews: PreviewProvider {
     static var previews: some View {
         TestView()
     }
 }
+
 
