@@ -43,14 +43,20 @@ QUESTION_FOUR_WORDS = [
                        "mexico", 
                        "giraffe",
                        "friend",
+                       "cake",
+                       "achieve",
+                       "kangaroo",
+                       "hickory",
+                       "pickle",
+                       
                        ]
 
 QUESTION_FIVE_PHRASES = ["Hello World", 
                          "I love Koalas", 
                          "Learning is fun",
                          "Join Drexel AI",
-                         "Alex Justin Rithvik and Ishan",
+                        # "Alex Justin Rithvik and Ishan",
                          "DysCover is a wonderful tool",
-                         'I am Vibe Coding right now',
-                         'Chat is this real'
+                         'I am coding right now',
+                         # 'Chat is this real'
                          ]
