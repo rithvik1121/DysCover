@@ -173,6 +173,7 @@ struct TestView: View {
                     endPoint: .bottomTrailing
                 )
                 .ignoresSafeArea()
+                .ignoresSafeArea(.keyboard, edges: .bottom) // Keep bottom pinned
                 
                 if !didBeginTest {
                     // Pre-Test Screen
@@ -214,8 +215,8 @@ struct TestView: View {
                     .transition(.opacity)
                 } else {
                     // Test in Progress
-                    VStack(spacing: 20) {
-                        // Header
+                    VStack(spacing: 0) { // 0 spacing to let content fill
+                        // Header / Title
                         VStack(spacing: 12) {
                             Text("Dyslexia Test")
                                 .font(.system(size: 34, weight: .bold, design: .rounded))
@@ -229,9 +230,9 @@ struct TestView: View {
                         }
                         .padding(.top, 50)
                         
-                        Spacer()
+                        Spacer(minLength: 0)
                         
-                        // Animated Section Content
+                        // Section Content (scrollable or not)
                         Group {
                             switch currentSection {
                             case 1:
@@ -252,20 +253,7 @@ struct TestView: View {
                         }
                         .animation(.easeInOut, value: currentSection)
                         
-                        Spacer()
-                        
-                        // Finish Button
-                        Button(action: finishTest) {
-                            Text("Finish Test")
-                                .font(.title2)
-                                .padding(.horizontal, 32)
-                                .padding(.vertical, 14)
-                                .background(Color(hex: "#FF7043"))
-                                .foregroundColor(.white)
-                                .cornerRadius(18)
-                                .shadow(color: .gray.opacity(0.4), radius: 4, x: 0, y: 4)
-                        }
-                        .padding(.bottom, 40)
+                        Spacer(minLength: 0)
                     }
                     .padding(.horizontal, 20)
                     .transition(.opacity)
@@ -281,6 +269,23 @@ struct TestView: View {
                 }
                 .hidden()
             )
+            // Put the "Finish Test" button in a safeAreaInset (iOS 15+),
+            // so it's pinned to the bottom and unaffected by the keyboard.
+            .safeAreaInset(edge: .bottom) {
+                if didBeginTest {
+                    Button(action: finishTest) {
+                        Text("Finish Test")
+                            .font(.title2)
+                            .padding(.horizontal, 32)
+                            .padding(.vertical, 14)
+                            .background(Color(hex: "#FF7043"))
+                            .foregroundColor(.white)
+                            .cornerRadius(18)
+                            .shadow(color: .gray.opacity(0.4), radius: 4, x: 0, y: 4)
+                    }
+                    .padding(.bottom, 10)
+                }
+            }
             .navigationBarTitleDisplayMode(.inline)
             .navigationBarHidden(true)
         }
@@ -290,7 +295,6 @@ struct TestView: View {
     private func beginTest() {
         isLoading = true
         let payload = ["username": globalUsername, "classname": globalClassName]
-        
         
         BackendManager.postRequest(route: "/start", payload: payload) { success in
             DispatchQueue.main.async {
@@ -340,40 +344,34 @@ struct ComprehensionSectionView: View {
     
     var body: some View {
         ScrollView {
-            VStack(spacing: 30) {
-                
+            VStack(spacing: 24) {
                 // QUESTION 1
-                // Another ScrollView, so the user can scroll further if the keyboard is large
-                ScrollView {
-                    CardView {
-                        VStack(alignment: .leading, spacing: 14) {
-                            Text("Question 1: Listen & Answer")
-                                .font(.headline)
-                                .foregroundColor(Color(hex: "#F57F17"))
-                            
-                            Text("Tap 'Play Audio' to hear the question.\nType your answer below:")
-                                .font(.subheadline)
-                                .foregroundColor(Color(hex: "#5D4037").opacity(0.8))
-                            
-                            Button(action: { playQ1Audio() }) {
-                                Label("Play Audio", systemImage: "speaker.wave.2.fill")
-                                    .foregroundColor(.white)
-                                    .padding(.horizontal, 14)
-                                    .padding(.vertical, 8)
-                                    .background(isQ1AudioReady ? Color(hex: "#FFD54F") : Color.gray)
-                                    .cornerRadius(10)
-                            }
-                            .disabled(!isQ1AudioReady)
-                            
-                            TextField("Your answer", text: $typedAnswer)
-                                .textFieldStyle(RoundedBorderTextFieldStyle())
-                                .padding(.top, 6)
+                // Just a CardView for question 1 in normal scroll context
+                CardView {
+                    VStack(alignment: .leading, spacing: 14) {
+                        Text("Question 1: Listen & Answer")
+                            .font(.headline)
+                            .foregroundColor(Color(hex: "#F57F17"))
+                        
+                        Text("Tap 'Play Audio' to hear the question.\nType your answer below:")
+                            .font(.subheadline)
+                            .foregroundColor(Color(hex: "#5D4037").opacity(0.8))
+                        
+                        Button(action: { playQ1Audio() }) {
+                            Label("Play Audio", systemImage: "speaker.wave.2.fill")
+                                .foregroundColor(.white)
+                                .padding(.horizontal, 14)
+                                .padding(.vertical, 8)
+                                .background(isQ1AudioReady ? Color(hex: "#FFD54F") : Color.gray)
+                                .cornerRadius(10)
                         }
+                        .disabled(!isQ1AudioReady)
+                        
+                        TextField("Your answer", text: $typedAnswer)
+                            .textFieldStyle(RoundedBorderTextFieldStyle())
+                            .padding(.top, 6)
                     }
-                    // Add some bottom padding so the user can scroll textfield above keyboard
-                    .padding(.bottom, 100)
                 }
-                .frame(height: 300) // or some suitable height
                 
                 // QUESTION 2
                 CardView {
@@ -422,7 +420,7 @@ struct ComprehensionSectionView: View {
                     }
                 }
                 
-                // Next Section
+                // "Next Section" (submits Q1 & Q2) at the BOTTOM of our scroll content
                 Button {
                     submitAnswersThenNext()
                 } label: {
@@ -434,19 +432,21 @@ struct ComprehensionSectionView: View {
                         .background(Color(hex: "#FBC02D"))
                         .cornerRadius(14)
                 }
-                .padding(.bottom, 10)
+                .padding(.bottom, 40)
             }
-            .padding(.vertical, 15)
+            .padding(.vertical, 24)
+            // Some bottom padding so we can scroll above the keyboard
+            .padding(.bottom, 300)
         }
-        // Extra modifiers to help with keyboard dismissal on iOS 16+
-        .scrollDismissesKeyboard(.interactively)
         .onAppear {
             fetchQ1Audio()
             fetchQ2Audio()
         }
+        // iOS 16+ auto keyboard dismissal on scroll
+        .scrollDismissesKeyboard(.interactively)
     }
     
-    // --- Q1 Audio ---
+    // MARK: - Q1 Audio
     private func fetchQ1Audio() {
         BackendManager.fetchAudio(route: "/question_one") { data in
             guard let data = data else {
@@ -477,7 +477,7 @@ struct ComprehensionSectionView: View {
         }
     }
     
-    // --- Q2 Audio ---
+    // MARK: - Q2 Audio
     private func fetchQ2Audio() {
         BackendManager.fetchAudio(route: "/question_two") { data in
             guard let data = data else {
@@ -488,6 +488,7 @@ struct ComprehensionSectionView: View {
                 do {
                     try AVAudioSession.sharedInstance().setCategory(.playback, mode: .default)
                     try AVAudioSession.sharedInstance().setActive(true)
+                    
                     self.letterPlayer = try AVAudioPlayer(data: data)
                     self.letterPlayer?.prepareToPlay()
                     self.isLetterAudioReady = true
@@ -512,7 +513,7 @@ struct ComprehensionSectionView: View {
         }
     }
     
-    // --- Combined ---
+    // Combined
     private func submitAnswersThenNext() {
         submitQuestionOneAnswer()
         submitLetterAnswer()
@@ -522,6 +523,7 @@ struct ComprehensionSectionView: View {
         }
     }
 }
+
 
 
 // MARK: - SECTION 2: Reading Prompt

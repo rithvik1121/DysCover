@@ -6,9 +6,8 @@ struct EnterUsernameView: View {
     @State private var navigateToDashboardView: Bool = false
 
     var body: some View {
-        NavigationView {
+        NavigationStack {
             ZStack {
-                // Warm gradient background
                 LinearGradient(
                     gradient: Gradient(colors: [Color(hex: "#FFF9C4"), Color(hex: "#FFD54F")]),
                     startPoint: .topLeading,
@@ -39,7 +38,6 @@ struct EnterUsernameView: View {
                         .padding(.horizontal)
 
                     Button("Continue") {
-                        // Only proceed if both fields are non-empty
                         if !localUsername.isEmpty && !localClassName.isEmpty {
                             globalUsername = localUsername
                             globalClassName = localClassName
@@ -49,12 +47,10 @@ struct EnterUsernameView: View {
                     .buttonStyle(.borderedProminent)
                     .tint(Color(hex: "#FBC02D"))
                     .padding(.bottom, 20)
-
-                    // NavigationLink to TestView
-                    NavigationLink(destination: DashboardView(username: globalUsername, className: globalClassName), isActive: $navigateToDashboardView) {
-                        EmptyView()
-                    }
                 }
+            }
+            .navigationDestination(isPresented: $navigateToDashboardView) {
+                DashboardView(username: globalUsername, className: globalClassName)
             }
             .navigationBarHidden(true)
         }
@@ -66,5 +62,3 @@ struct EnterUsernameView_Previews: PreviewProvider {
         EnterUsernameView()
     }
 }
-
-

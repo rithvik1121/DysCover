@@ -249,12 +249,12 @@ struct DashboardView: View {
                             .padding(.top, 20)
                         
                         // Titles
-                        Text("Hello, \(username)")
+                        Text("Hello, \(globalUsername)")
                             .font(.system(size: 34, weight: .heavy, design: .default))
                             .foregroundColor(.brown)
                             .multilineTextAlignment(.center)
                         
-                        Text("Class: \(className)")
+                        Text("Class: \(globalClassName)")
                             .font(.title3)
                             .foregroundColor(.brown.opacity(0.8))
                         
@@ -359,14 +359,15 @@ struct DashboardView: View {
         }
     }
     
+    
     // MARK: - Data Fetch
     private func fetchData() {
         isLoading = true
         errorMessage = nil
-        
+
         let baseURL = "http://192.168.1.213:8443/get_user_class_data"
-        guard let encodedUsername = username.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed),
-              let encodedClassName = className.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed),
+        guard let encodedUsername = globalUsername.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed),
+              let encodedClassName = globalClassName.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed),
               let url = URL(string: "\(baseURL)?username=\(encodedUsername)&class_name=\(encodedClassName)") else {
             self.errorMessage = "Invalid URL"
             self.isLoading = false
@@ -384,7 +385,7 @@ struct DashboardView: View {
                     self.errorMessage = "No data returned"
                     return
                 }
-                // Print raw JSON for debugging
+                // For debugging
                 if let jsonString = String(data: data, encoding: .utf8) {
                     print("Raw JSON: \(jsonString)")
                 }
@@ -400,6 +401,7 @@ struct DashboardView: View {
             }
         }.resume()
     }
+
 }
 
 // MARK: - Preview
