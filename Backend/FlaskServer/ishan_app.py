@@ -260,7 +260,6 @@ def test():
 
 @app.route('/start', methods=['POST'])
 def start_test():
-    print_user_data(user_dataframe)
     data = request.get_json()
     if not data or 'username' not in data:
         return jsonify({'error': 'Missing username'}), 400
@@ -271,7 +270,7 @@ def start_test():
     #fix this to reset frame values
     user_dataframe.drop(user_dataframe.index, inplace=True)
     user_dataframe.loc[0, user_dataframe.columns[0]] = username
-    user_dataframe.loc[0, user_dataframe.columns[1]] = classsname
+    user_dataframe.loc[0, user_dataframe.columns[1]] = classname
     print("Starting the test:")
     print_user_data(user_dataframe)
     return jsonify({'message': f'User {username} started successfully'}), 200 
@@ -513,4 +512,4 @@ def finish_test():
     return jsonify({'message': 'Test results saved successfully'}), 200
 
 if __name__ == '__main__':
-    app.run(debug=True, host="192.168.1.213", port=8442)
+    app.run(debug=True, host="192.168.1.213", port=8443)
