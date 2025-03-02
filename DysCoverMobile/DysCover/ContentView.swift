@@ -87,69 +87,72 @@ struct ContentView: View {
 /// A simple view to collect username and class name, then navigate to DashboardView.
 struct EnterUsernameAgainView: View {
     @State private var localUsername: String = ""
-    @State private var localClassName: String = ""
-    @State private var navigateToDashboard = false
-    
-    var body: some View {
-        ZStack {
-            LinearGradient(
-                gradient: Gradient(colors: [Color(hex: "#FFFDE7"), Color(hex: "#FFECB3")]),
-                startPoint: .topLeading,
-                endPoint: .bottomTrailing
-            )
-            .edgesIgnoringSafeArea(.all)
-            
-            VStack(spacing: 40) {
-                Text("Enter Your Info")
-                    .font(.largeTitle)
-                    .fontWeight(.bold)
-                    .foregroundColor(Color(hex: "#F57F17"))
-                    .padding(.top, 80)
-                
-                VStack(spacing: 20) {
-                    TextField("Username", text: $localUsername)
-                        .padding()
-                        .background(Color.white.opacity(0.8))
-                        .cornerRadius(8)
-                        .padding(.horizontal, 40)
-                    
-                    TextField("Class Name", text: $localClassName)
-                        .padding()
-                        .background(Color.white.opacity(0.8))
-                        .cornerRadius(8)
-                        .padding(.horizontal, 40)
-                }
-                
-                Button(action: {
-                    if !localUsername.isEmpty && !localClassName.isEmpty {
-                        globalUsername = localUsername
-                        globalClassName = localClassName
-                        navigateToDashboard = true
-                    }
-                }) {
-                    Text("Continue")
-                        .font(.headline)
-                        .foregroundColor(.white)
-                        .padding(.vertical, 10)
-                        .padding(.horizontal, 50)
-                        .background(Color(hex: "#FBC02D"))
-                        .cornerRadius(12)
-                }
-                
-                Spacer()
-            }
-            
-            // NavigationLink to DashboardView
-            NavigationLink(
-                destination: DashboardView(username: globalUsername,
-                                           className: globalClassName),
-                isActive: $navigateToDashboard
-            ) {
-                EmptyView()
-            }
-        }
-        .navigationBarHidden(true)
-    }
+       @State private var localClassName: String = ""
+       @State private var navigateToDashboard: Bool = false
+       
+       var body: some View {
+           NavigationView {
+               ZStack {
+                   // Simple background gradient
+                   LinearGradient(
+                       gradient: Gradient(colors: [.white, .gray.opacity(0.2)]),
+                       startPoint: .topLeading,
+                       endPoint: .bottomTrailing
+                   )
+                   .edgesIgnoringSafeArea(.all)
+                   
+                   VStack(spacing: 40) {
+                       Text("Enter Your Info")
+                           .font(.largeTitle)
+                           .fontWeight(.bold)
+                           .padding(.top, 80)
+                       
+                       // Input fields
+                       VStack(spacing: 20) {
+                           TextField("Username", text: $localUsername)
+                               .padding()
+                               .background(Color.white.opacity(0.9))
+                               .cornerRadius(8)
+                               .padding(.horizontal, 40)
+                               .foregroundColor(Color .black)
+                           
+                           TextField("Class Name", text: $localClassName)
+                               .padding()
+                               .background(Color.white.opacity(0.9))
+                               .cornerRadius(8)
+                               .padding(.horizontal, 40)
+                               .foregroundColor(Color .black)
+                       }
+                       
+                       // "Continue" button
+                       Button("Continue") {
+                           // Update global variables
+                           globalUsername = localUsername
+                           globalClassName = localClassName
+                           // Trigger navigation
+                           navigateToDashboard = true
+                       }
+                       .font(.headline)
+                       .padding(.horizontal, 50)
+                       .padding(.vertical, 12)
+                       .background(Color.blue)
+                       .foregroundColor(.white)
+                       .cornerRadius(10)
+                       
+                       Spacer()
+                   }
+                   
+                   // Hidden NavigationLink to DashboardView
+                   NavigationLink(
+                       destination: DashboardView(username: globalUsername, className: globalClassName),
+                       isActive: $navigateToDashboard
+                   ) {
+                       EmptyView()
+                   }
+               }
+               .navigationBarHidden(true)
+           }
+       }
 }
 
 // MARK: - Preview
