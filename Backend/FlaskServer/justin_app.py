@@ -2,13 +2,19 @@ from flask import Flask, request, send_file, jsonify, g
 from text_to_speech import create_audio
 from speech_to_text import transcribe_audio
 from data.words import QUESTION_ONE_WORDS, QUESTION_THREE_WORDS, QUESTION_FOUR_WORDS, QUESTION_FIVE_PHRASES
+from models.modelV1 import StutterCNN
+from image_rec import handwriting_test
 import os
 import random
 import pandas as pd
 import sqlite3
+import torch
+from pydub import AudioSegment
+import librosa
 
 app = Flask(__name__)
 
+#-----Database------
 DATABASE = "Database/user_data.sqlite"
 
 # Use Flask's g to create a per-request connection.
@@ -26,16 +32,6 @@ def close_connection(exception):
         db.close()
         print("Database connection closed.")
 
-user_dataframe = pd.DataFrame(columns=[
-    'username', 'class', 'question1', 'question2', 'question3', 'question4', 'question5',
-    'spelling_accuracy', 'stutter_metric', 'speaking_accuracy', 'handwriting_metric', 'total_score'
-])
-
-CORRECT_ANSWER = {
-    'question1': "",
-    'question2': "", 
-    'question3': "",
-}
 
 
 
@@ -73,6 +69,22 @@ def retrieve_user_class_data(username, class_name):
     cursor.execute("SELECT * FROM data WHERE username = ? AND class = ?;", (username, class_name))
     rows = cursor.fetchall()
     return rows
+
+user_dataframe = pd.DataFrame(columns=[
+    'username', 'class', 'question1', 'question2', 'question3', 'question4', 'question5',
+    'spelling_accuracy', 'stutter_metric', 'speaking_accuracy', 'handwriting_metric', 'total_score'
+])
+
+CORRECT_ANSWER = {
+    'question1': "",
+    'question2': "", 
+    'question3': "",
+    'question4': "",
+    'question5': ""
+}
+
+
+#---END_DATABASE_____
 
 
 @app.route('/get_user_class_data', methods=['GET'])
@@ -220,9 +232,11 @@ def question_three_post():
         else:
             user_dataframe.loc[0, user_dataframe.columns[4]] = 'incorrect'
             user_dataframe.loc[0, user_dataframe.columns[9]] = "no"
-            
+
     except Exception as e:
         return jsonify({'error': f'Transcription failed, {str(e)}'}), 500
+    
+    print(user_dataframe.head())
     
     return jsonify({'message': 'Question 3 audio received successfully'}), 200
 
@@ -247,30 +261,64 @@ def question_four_post():
     audio_file.save(file_path)
     print(f"Received audio file: {file_path}")
     
-    #ISHANNNNNN GRADE IT HEREEEEEE
+    model = StutterCNN()
+    model.load_state_dict(torch.load('../Models/stutter_cnn'))
+    
+    
+    #Rithvik GRADE IT HEREEEEEE
+    sound = AudioSegment.from_file(file_path, format = 'm4a')
+    file_handle = sound.export('static/waveforms/stutter_detection_audio.wav', format='wav')
+    os.remove(file_path)
+    features = model.extract_features('static/waveforms/stutter_detection_audio.wav')
+    features = features.unsqueeze(0)
+    result = model(features)
+    _, predicted = torch.max(result, 1)
+    prediction = int(predicted[0])
+    
+    print(prediction)
+    
+    if prediction==1:
+        user_dataframe.loc[0, user_dataframe.columns[5]] = 'incorrect'
+        user_dataframe.loc[0]['stutter_metric']='stutter'
+    elif prediction==0:
+        user_dataframe.loc[0, user_dataframe.columns[5]] = 'correct'
+        user_dataframe.loc[0]['stutter_metric']='no_stutter'
+        
+    print(user_dataframe.head())
+
     
     return jsonify({'message': 'Question 3 audio received successfully'}), 200
     
     
+
+@app.route('/handwriting_analysis', methods=['POST'])
+def handwriting_analysis():
+    image = request.files['image']
+    response = handwriting_test("Apple", image)
+    return jsonify(response=response)
+
 @app.route('/question_five', methods=['GET'])
 def question_five_get():
     phrase = random.choice(QUESTION_FIVE_PHRASES)
-    print(phrase)
-    return jsonify({'phrase': phrase})
+    CORRECT_ANSWER['question5'] = phrase
+    audio_path = create_audio(app, CORRECT_ANSWER["question5"], "question5.mp3")
+    return send_file(audio_path, mimetype="audio/mpeg", as_attachment=False)
 
 @app.route('/question_five', methods=['POST'])
 def question_five_post():
-    UPLOAD_FOLDER = 'static/handwritten_image'
-    if not os.path.exists(UPLOAD_FOLDER):
-        os.makedirs(UPLOAD_FOLDER)
-    if 'image' not in request.files:
-        return jsonify({'error': 'No image file provided'}), 400
-    image_file = request.files['image']
-    filename = image_file.filename
-    file_path = os.path.join(UPLOAD_FOLDER, filename)
-    image_file.save(file_path)
-    print(f"Received handwriting image: {file_path}")
-    # Here you would process and grade the image.
+    image = request.files['image']
+    response = handwriting_test(CORRECT_ANSWER['question5'], image)
+    print(f"Response: {response}")
+    is_match, confidence = response.split(',')
+    is_match = is_match.strip().lower()
+    # trimming out any space or percent
+    confidence = confidence.strip().strip('%')
+    confidence = float(confidence)
+    print(f"The response matches correct answer: {is_match}. Confidence on the image: {confidence}")
+    
+    user_dataframe.loc[0, user_dataframe.columns[6]] = is_match
+    user_dataframe.loc[0, user_dataframe.columns[10]] = confidence
+    
     return jsonify({'message': 'Handwriting image received successfully'}), 200
 
 
@@ -281,7 +329,25 @@ def finish_test():
 
     if user_dataframe.empty:
         return jsonify({'error': 'No test data to save'}), 400
+    
+    total_score=100
+    
+    spelling_deduction= ((100.0 - user_dataframe.loc[0]['spelling_accuracy']) / 100) * -20
+    if user_dataframe.loc[0]['stutter_metric'] =='no_stutter':
+        stutter_deduction=0
+    else:
+        stutter_deduction=-20
 
+    if user_dataframe.loc[0]['speaking_accuracy'] =='correct':
+        speaking_deduction=0
+    else:
+        speaking_deduction=-20  
+    
+    handwriting_deduction= ((100.0 - user_dataframe.loc[0]['spelling_accuracy']) / 100) * -20
+    
+    total_score = total_score + spelling_deduction + stutter_deduction + speaking_deduction + handwriting_deduction
+    
+    user_dataframe.loc[0]['total_score']=total_score
     test_data = user_dataframe.iloc[0].to_dict()
 
     cursor.execute("""
@@ -303,7 +369,7 @@ def finish_test():
         test_data.get('handwriting_metric', 0),
         test_data.get('total_score', 0),
     ))
-    cursor.commit()  
+    db.commit()  
     print(f"Test data saved for user: {test_data.get('username', 'Unknown')}")
 
     return jsonify({'message': 'Test results saved successfully'}), 200
