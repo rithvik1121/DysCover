@@ -4,12 +4,14 @@ from speech_to_text import transcribe_audio
 from data.words import QUESTION_ONE_WORDS, QUESTION_THREE_WORDS, QUESTION_FOUR_WORDS, QUESTION_FIVE_PHRASES
 from models.modelV1 import StutterCNN
 from image_rec import handwriting_test
+from dotenv import load_dotenv
 import os
 import random
 import pandas as pd
 import sqlite3
 import torch
 from pydub import AudioSegment
+import re
 
 # loading env vars
 load_dotenv()
@@ -126,6 +128,7 @@ def speech_to_text():
 def get_user_class_data_route():
     username = request.args.get('username')
     class_name = request.args.get('class_name')
+    print(f"Username: {username} Class_name: {class_name}")
     
     if not username or not class_name:
         return jsonify({'error': 'Missing username or class_name parameter'}), 400
@@ -345,12 +348,18 @@ def question_five_post():
     is_match, confidence = response.split(',')
     is_match = is_match.strip().lower()
     # trimming out any space or percent
-    confidence = confidence.strip().strip('%')
-    confidence = float(confidence)
+    confidence = confidence.strip().strip('%').strip(".")
+    try:
+        confidence = float(confidence)
+    except ValueError:
+        match = re.search(r'\d{1,2}', confidence)
+        confidence = float(match.group()) if match else 0
     print(f"The response matches correct answer: {is_match}. Confidence on the image: {confidence}")
     
     user_dataframe.loc[0, user_dataframe.columns[6]] = is_match
     user_dataframe.loc[0, user_dataframe.columns[10]] = confidence
+    
+    print(user_dataframe.head())
     
     return jsonify({'message': 'Handwriting image received successfully'}), 200
 
