@@ -140,8 +140,36 @@ CORRECT_ANSWER = {
     'question5': ""
 }
 
-
 #---END_DATABASE_____
+
+def print_user_data(user_dataframe):
+    """Pretty prints user data from a single-row DataFrame."""
+    
+    if user_dataframe.empty:
+        print("No data available.")
+        return
+
+    # Extract the first (and only) row
+    row = user_dataframe.loc[0]
+
+    # Print username and class in one line
+    print(f"User: {row['username']} | Class: {row['class']}")
+    
+    # Print questions in a single line with labels
+    questions = [f"Question {i}: {row[f'question{i}']}" for i in range(1, 6) if f'question{i}' in row]
+    print(" | ".join(questions))
+
+    # Print remaining metrics in one line
+    other_metrics = [
+        f"Spelling Accuracy: {row['spelling_accuracy']}%",
+        f"Stutter Metric: {row['stutter_metric']}",
+        f"Speaking Accuracy: {row['speaking_accuracy']}%",
+        f"Handwriting Metric: {row['handwriting_metric']}%",
+        f"Total Score: {row['total_score']}",
+        f"Difficulty Level: {row['difficulty_level']}"
+    ]
+    print(" | ".join(other_metrics))
+
 
 # ----- ROUTES -----
 @app.route('/text_to_speech', methods=['POST'])
@@ -181,14 +209,13 @@ def speech_to_text():
 def get_user_class_data_route():
     username = request.args.get('username')
     class_name = request.args.get('class_name')
-    print(f"Username: {username} Class_name: {class_name}")
+    # print(f"Username: {username} Class_name: {class_name}")
     
     if not username or not class_name:
         return jsonify({'error': 'Missing username or class_name parameter'}), 400
 
     rows = retrieve_user_class_data(username, class_name)  # returns sqlite3.Row
     data = [dict(row) for row in rows]
-    print(jsonify(data))
     return jsonify(data)
 
 
@@ -226,8 +253,14 @@ def percent_correct(correct: str, user_input: str) -> float:
 def index():
     return 'Hello World'
 
+@app.route('/test')
+def test():
+    print_user_data(user_dataframe)
+    return "test"
+
 @app.route('/start', methods=['POST'])
 def start_test():
+    print_user_data(user_dataframe)
     data = request.get_json()
     if not data or 'username' not in data:
         return jsonify({'error': 'Missing username'}), 400
@@ -238,8 +271,9 @@ def start_test():
     #fix this to reset frame values
     user_dataframe.drop(user_dataframe.index, inplace=True)
     user_dataframe.loc[0, user_dataframe.columns[0]] = username
-    user_dataframe.loc[0, user_dataframe.columns[1]] = classname
-    print(user_dataframe.head())
+    user_dataframe.loc[0, user_dataframe.columns[1]] = classsname
+    print("Starting the test:")
+    print_user_data(user_dataframe)
     return jsonify({'message': f'User {username} started successfully'}), 200 
 
 @app.route('/question_one', methods=['GET'])
@@ -247,7 +281,7 @@ def question_one_get():
     word = random.choice(QUESTION_ONE_WORDS).lower()
     CORRECT_ANSWER["question1"] = word
     audio_path = create_audio(app, word, "word.mp3")
-    print(audio_path)
+    # print(audio_path)
     return send_file(audio_path, mimetype="audio/mpeg", as_attachment=False)
 
 @app.route('/question_one', methods=['POST'])
@@ -267,7 +301,7 @@ def question_one_post():
         user_dataframe.loc[0, user_dataframe.columns[2]] = 'incorrect'
         user_dataframe.loc[0, user_dataframe.columns[7]] = relative_score
 
-    print(user_dataframe.head())
+    print_user_data(user_dataframe)
     return jsonify({'message': f'Question 1 graded successfully!'}), 200
 
     
@@ -293,7 +327,7 @@ def question_two_post():
     else:
         user_dataframe.loc[0, user_dataframe.columns[3]] = 'incorrect'
 
-    print(user_dataframe.head())
+    print_user_data(user_dataframe)
     return jsonify({'message': f'Question 2 graded successfully!'}), 200
 
 @app.route('/question_three', methods=['GET'])
@@ -329,8 +363,7 @@ def question_three_post():
     except Exception as e:
         return jsonify({'error': f'Transcription failed, {str(e)}'}), 500
     
-    print(user_dataframe.head())
-    
+    print_user_data(user_dataframe)
     return jsonify({'message': 'Question 3 audio received successfully'}), 200
 
 
@@ -366,7 +399,7 @@ def question_four_post():
     _, predicted = torch.max(result, 1)
     prediction = int(predicted[0])
     
-    print(prediction)
+    # print(prediction)
     
     if prediction==1:
         user_dataframe.loc[0, user_dataframe.columns[5]] = 'incorrect'
@@ -375,9 +408,7 @@ def question_four_post():
         user_dataframe.loc[0, user_dataframe.columns[5]] = 'correct'
         user_dataframe.loc[0]['stutter_metric']='no_stutter'
         
-    print(user_dataframe.head())
-
-    
+    print_user_data(user_dataframe)
     return jsonify({'message': 'Question 3 audio received successfully'}), 200
     
     
@@ -414,8 +445,7 @@ def question_five_post():
     user_dataframe.loc[0, user_dataframe.columns[6]] = is_match
     user_dataframe.loc[0, user_dataframe.columns[10]] = confidence
     
-    print(user_dataframe.head())
-    
+    print_user_data(user_dataframe)
     return jsonify({'message': 'Handwriting image received successfully'}), 200
 
 
@@ -483,4 +513,4 @@ def finish_test():
     return jsonify({'message': 'Test results saved successfully'}), 200
 
 if __name__ == '__main__':
-    app.run(debug=True, host="192.168.1.213", port=8443)
+    app.run(debug=True, host="192.168.1.213", port=8442)
