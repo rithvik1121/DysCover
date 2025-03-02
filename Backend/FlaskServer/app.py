@@ -1,4 +1,4 @@
-from flask import Flask, request, send_file, jsonify, g
+from flask import Flask, request, send_file, jsonify, g, url_for
 from text_to_speech import create_audio
 from speech_to_text import transcribe_audio
 from data.words import QUESTION_ONE_WORDS, QUESTION_THREE_WORDS, QUESTION_FOUR_WORDS, QUESTION_FIVE_PHRASES
@@ -18,6 +18,7 @@ load_dotenv()
 
 app = Flask(__name__, static_folder='static')
 
+DIFFICULTY_LEVELS = ["easy", "medium", "hard"]
 TTS_FOLDER = os.path.join(app.root_path, 'static/tts')
 STT_FOLDER = os.path.join(app.root_path, 'static/stt')
 
@@ -74,9 +75,51 @@ def retrieve_user_class_data(username, class_name):
     rows = cursor.fetchall()
     return rows
 
+def retrieve_learning_questions(difficulty_level):
+    db = get_db()
+    cursor = db.cursor()
+    cursor.execute("SELECT * FROM learning_questions WHERE question_difficulty = ?", (difficulty_level,))
+    rows = cursor.fetchall()
+    return rows
+
+def get_learning_data(username):
+    db = get_db()
+    cursor = db.cursor()
+    cursor.execute("SELECT * FROM data WHERE username = ?;", (username,))
+    rows = cursor.fetchall()
+    if not rows:
+        return None
+    
+    difficulty = rows[0]['difficulty_level']
+    questions = retrieve_learning_questions(difficulty)
+    print(difficulty)
+    print(questions)
+    
+    audio_files = []
+    for question in questions:
+        audio_path = question['question_audio_path']
+        url = url_for('static', filename=audio_path.replace("static/", ""), _external=True)
+        if os.path.exists(audio_path):
+            audio_files.append(url)
+    
+    return audio_files
+
+@app.route('/get_learning_audio_files', methods=['GET'])
+def get_learning_audio_files():
+    username = request.args.get('username')
+    if not username:
+        return jsonify({'error': 'Missing username parameter'}), 400
+    
+    audio_files = get_learning_data(username)
+    print(audio_files)
+    if not audio_files:
+        return jsonify({'error': 'No learning data found'}), 404
+    
+    return jsonify({'audio_files': audio_files})
+
 user_dataframe = pd.DataFrame(columns=[
     'username', 'class', 'question1', 'question2', 'question3', 'question4', 'question5',
-    'spelling_accuracy', 'stutter_metric', 'speaking_accuracy', 'handwriting_metric', 'total_score'
+    'spelling_accuracy', 'stutter_metric', 'speaking_accuracy', 'handwriting_metric', 'total_score', 'difficulty_level'
 ])
 
 CORRECT_ANSWER = {
@@ -179,11 +222,13 @@ def start_test():
     if not data or 'username' not in data:
         return jsonify({'error': 'Missing username'}), 400
 
+    classname = data['classname']
     username = data['username']
-    print(username)
+    print(f"Username: {username} Class: {classname}")
     #fix this to reset frame values
     user_dataframe.drop(user_dataframe.index, inplace=True)
     user_dataframe.loc[0, user_dataframe.columns[0]] = username
+    user_dataframe.loc[0, user_dataframe.columns[1]] = classname
     print(user_dataframe.head())
     return jsonify({'message': f'User {username} started successfully'}), 200 
 
@@ -373,6 +418,9 @@ def finish_test():
         return jsonify({'error': 'No test data to save'}), 400
     
     total_score=100
+    stutter_deduction=0
+    speaking_deduction=0
+    question2_deduction=0
     
     spelling_deduction= ((100.0 - user_dataframe.loc[0]['spelling_accuracy']) / 100) * -20
     if user_dataframe.loc[0]['stutter_metric'] =='no_stutter':
@@ -383,20 +431,25 @@ def finish_test():
     if user_dataframe.loc[0]['speaking_accuracy'] =='correct':
         speaking_deduction=0
     else:
-        speaking_deduction=-20  
+        speaking_deduction=-20 
+        
+    if user_dataframe.loc[0]['question2']=='correct':
+        question2_deduction=0
+    elif user_dataframe.loc[0]['question2']=='incorrect':
+        question2_deduction=-20
     
     handwriting_deduction= ((100.0 - user_dataframe.loc[0]['spelling_accuracy']) / 100) * -20
     
-    total_score = total_score + spelling_deduction + stutter_deduction + speaking_deduction + handwriting_deduction
+    total_score = total_score + spelling_deduction + stutter_deduction + speaking_deduction + handwriting_deduction + question2_deduction
     
     user_dataframe.loc[0]['total_score']=total_score
-    test_data = user_dataframe.iloc[0].to_dict()
+    test_data = user_dataframe.loc[0].to_dict()
 
-    cursor.execute("""
+    db.execute("""
         INSERT INTO data (
             username, class, question1, question2, question3, question4, question5, 
             spelling_accuracy, stutter_metric, speaking_accuracy, handwriting_metric, total_score
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+        ,difficulty_level) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
     """, (
         test_data.get('username', 'Unknown'),
         test_data.get('class', 'N/A'),
@@ -410,12 +463,14 @@ def finish_test():
         test_data.get('speaking_accuracy', 'N/A'),
         test_data.get('handwriting_metric', 0),
         test_data.get('total_score', 0),
+        test_data.get('difficulty_level', 0)
     ))
-    db.commit()  
+    
+    
+    db.commit() 
     print(f"Test data saved for user: {test_data.get('username', 'Unknown')}")
-
+ 
     return jsonify({'message': 'Test results saved successfully'}), 200
-
 
 if __name__ == '__main__':
     app.run(debug=True, host="192.168.1.213", port=8443)
