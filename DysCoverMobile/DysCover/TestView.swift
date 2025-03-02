@@ -289,13 +289,14 @@ struct TestView: View {
     
     private func beginTest() {
         isLoading = true
-        let payload = ["username": globalUsername]
+        let payload = ["username": globalUsername, "classname": globalClassName]
+        
         
         BackendManager.postRequest(route: "/start", payload: payload) { success in
             DispatchQueue.main.async {
                 self.isLoading = false
                 if success {
-                    print("Test started for \(globalUsername)")
+                    print("Test started for \(globalUsername) Class \(globalClassName)")
                     withAnimation {
                         self.didBeginTest = true
                     }
@@ -338,37 +339,43 @@ struct ComprehensionSectionView: View {
     @State private var selectedLetter: String? = nil
     
     var body: some View {
-        // Use a ScrollView with extra bottom padding to avoid keyboard overlap
         ScrollView {
             VStack(spacing: 30) {
-                // Question 1 Card
-                CardView {
-                    VStack(alignment: .leading, spacing: 14) {
-                        Text("Question 1: Listen & Answer")
-                            .font(.headline)
-                            .foregroundColor(Color(hex: "#F57F17"))
-                        
-                        Text("Tap 'Play Audio' to hear the question.\nType your answer below:")
-                            .font(.subheadline)
-                            .foregroundColor(Color(hex: "#5D4037").opacity(0.8))
-                        
-                        Button(action: { playQ1Audio() }) {
-                            Label("Play Audio", systemImage: "speaker.wave.2.fill")
-                                .foregroundColor(.white)
-                                .padding(.horizontal, 14)
-                                .padding(.vertical, 8)
-                                .background(isQ1AudioReady ? Color(hex: "#FFD54F") : Color.gray)
-                                .cornerRadius(10)
-                        }
-                        .disabled(!isQ1AudioReady)
-                        
-                        TextField("Your answer", text: $typedAnswer)
-                            .textFieldStyle(RoundedBorderTextFieldStyle())
-                            .padding(.top, 6)
-                    }
-                }
                 
-                // Question 2 Card
+                // QUESTION 1
+                // Another ScrollView, so the user can scroll further if the keyboard is large
+                ScrollView {
+                    CardView {
+                        VStack(alignment: .leading, spacing: 14) {
+                            Text("Question 1: Listen & Answer")
+                                .font(.headline)
+                                .foregroundColor(Color(hex: "#F57F17"))
+                            
+                            Text("Tap 'Play Audio' to hear the question.\nType your answer below:")
+                                .font(.subheadline)
+                                .foregroundColor(Color(hex: "#5D4037").opacity(0.8))
+                            
+                            Button(action: { playQ1Audio() }) {
+                                Label("Play Audio", systemImage: "speaker.wave.2.fill")
+                                    .foregroundColor(.white)
+                                    .padding(.horizontal, 14)
+                                    .padding(.vertical, 8)
+                                    .background(isQ1AudioReady ? Color(hex: "#FFD54F") : Color.gray)
+                                    .cornerRadius(10)
+                            }
+                            .disabled(!isQ1AudioReady)
+                            
+                            TextField("Your answer", text: $typedAnswer)
+                                .textFieldStyle(RoundedBorderTextFieldStyle())
+                                .padding(.top, 6)
+                        }
+                    }
+                    // Add some bottom padding so the user can scroll textfield above keyboard
+                    .padding(.bottom, 100)
+                }
+                .frame(height: 300) // or some suitable height
+                
+                // QUESTION 2
                 CardView {
                     VStack(alignment: .leading, spacing: 14) {
                         Text("Question 2: Letter Discrimination")
@@ -415,7 +422,7 @@ struct ComprehensionSectionView: View {
                     }
                 }
                 
-                // Next Section (submits Q1 & Q2 automatically)
+                // Next Section
                 Button {
                     submitAnswersThenNext()
                 } label: {
@@ -430,17 +437,16 @@ struct ComprehensionSectionView: View {
                 .padding(.bottom, 10)
             }
             .padding(.vertical, 15)
-            .padding(.bottom, 150) // Extra space so keyboard doesn't obscure the text field
         }
+        // Extra modifiers to help with keyboard dismissal on iOS 16+
+        .scrollDismissesKeyboard(.interactively)
         .onAppear {
             fetchQ1Audio()
             fetchQ2Audio()
         }
-        // This helps to dismiss the keyboard if the user scrolls or taps away (iOS 16+)
-        .scrollDismissesKeyboard(.interactively)
     }
     
-    // Q1 Audio
+    // --- Q1 Audio ---
     private func fetchQ1Audio() {
         BackendManager.fetchAudio(route: "/question_one") { data in
             guard let data = data else {
@@ -471,7 +477,7 @@ struct ComprehensionSectionView: View {
         }
     }
     
-    // Q2 Audio
+    // --- Q2 Audio ---
     private func fetchQ2Audio() {
         BackendManager.fetchAudio(route: "/question_two") { data in
             guard let data = data else {
@@ -482,7 +488,6 @@ struct ComprehensionSectionView: View {
                 do {
                     try AVAudioSession.sharedInstance().setCategory(.playback, mode: .default)
                     try AVAudioSession.sharedInstance().setActive(true)
-                    
                     self.letterPlayer = try AVAudioPlayer(data: data)
                     self.letterPlayer?.prepareToPlay()
                     self.isLetterAudioReady = true
@@ -507,7 +512,7 @@ struct ComprehensionSectionView: View {
         }
     }
     
-    // Combined submission
+    // --- Combined ---
     private func submitAnswersThenNext() {
         submitQuestionOneAnswer()
         submitLetterAnswer()
@@ -517,6 +522,7 @@ struct ComprehensionSectionView: View {
         }
     }
 }
+
 
 // MARK: - SECTION 2: Reading Prompt
 struct QuestionThreeSectionView: View {
