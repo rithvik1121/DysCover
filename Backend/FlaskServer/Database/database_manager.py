@@ -1,6 +1,6 @@
 import sqlite3
 
-conn = sqlite3.connect('user_data.sqlite')
+conn = sqlite3.connect('./user_data.sqlite')
 cursor = conn.cursor()
 
 def insert_data(username, class_name, question1, question2, question3, question4, question5, 
@@ -15,10 +15,31 @@ def insert_data(username, class_name, question1, question2, question3, question4
     conn.commit()
     print(f"Data inserted for user: {username}")
 
-def retrieve_data():
-    cursor.execute("SELECT * FROM data;")
+
+def update_names():
+    cursor.execute("""
+        select name from sqlite_master where type = 'table';
+    """)
+    
     rows = cursor.fetchall()
     
+    for row in rows:
+        print(row)
+    #conn.commit()
+
+
+def retrieve_data():
+    cursor.execute("""
+        select name from sqlite_master where type = 'table';
+    """)
+    
+    rows = cursor.fetchall()
+    
+    for row in rows:
+        print(row)  
+    #cursor.execute("SELECT * FROM data;")
+    rows = cursor.fetchall()
+    print(rows)
     for row in rows:
         print(row)  
     
@@ -56,8 +77,8 @@ def retrieve_user_class_data(username, class_name):
 
     return rows
 
-
-
+if __name__ == '__main__':
+    retrieve_data()
 
 cursor.close()
 conn.close()
