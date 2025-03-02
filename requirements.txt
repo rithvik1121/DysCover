@@ -1,4 +1,5 @@
 flask
-deepgram-sdk
 python-dotenv
 openai
+google-cloud-texttospeech
+elevenlabs

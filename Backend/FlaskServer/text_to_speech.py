@@ -1,23 +1,29 @@
 from dotenv import load_dotenv
-from deepgram import DeepgramClient, SpeakOptions
+from elevenlabs.client import ElevenLabs
+from elevenlabs import play, save
 import os
 
-# deepgram client
-dg_client = DeepgramClient(os.getenv('DEEPGRAM_API_KEY'))
-options = SpeakOptions(model="aura-luna-en")
+load_dotenv()
 
-# Text-to-Speech
-def create_audio(app, text):
-    try:
-        audio_folder = os.path.join(app.static_folder, 'audio')
-        
-        # make dir if not exists
-        if not os.path.exists(audio_folder):
-            os.makedirs(audio_folder)
-        
-        filename = os.path.join(app.static_folder, audio_folder, "output.mp3")
-        dg_client.speak.v("1").save(filename, {"text":text}, options)
-        return filename
+client = ElevenLabs(
+    api_key=os.getenv("ELEVENLABS_API_KEY"),
+)
+
+def create_audio(app, text, filename="output.mp3"):
+    audio_folder = os.path.join(app.static_folder, 'tts')
     
-    except Exception as e:
-        raise ValueError(f"Speech synthesis failed: {str(e)}")
+    # make dir if not exists
+    if not os.path.exists(audio_folder):
+        os.makedirs(audio_folder)
+    
+    filename = os.path.join(app.static_folder, audio_folder, "output.mp3")
+    
+    audio = client.text_to_speech.convert(
+        text=text,
+        voice_id="56AoDkrOh6qfVPDXZ7Pt",
+        model_id="eleven_flash_v2",
+        output_format="mp3_22050_32",
+        )
+    save(audio, filename)
+    
+    return filename
