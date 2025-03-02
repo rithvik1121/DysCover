@@ -4,7 +4,7 @@ import SwiftUI
 struct TestRecord: Identifiable, Codable {
     let test_id: Int
     let username: String
-    let className: String  // Swift property for JSON "class"
+    let className: String
     let question1: String?
     let question2: String?
     let question3: String?
@@ -112,7 +112,6 @@ struct AestheticLineChartView: View {
                         }
                     }
                 }
-                // Pastel background for the chart
                 .background(
                     LinearGradient(
                         gradient: Gradient(colors: [
@@ -137,7 +136,6 @@ struct AestheticLineChartView: View {
     }
     
     // MARK: - Path Helpers
-    
     private func createLinePath(in geo: GeometryProxy) -> Path {
         var path = Path()
         guard dataPoints.count > 1 else { return path }
@@ -271,7 +269,6 @@ struct DashboardView: View {
                                 .cornerRadius(12)
                         }
                         
-                        // A small divider or spacing
                         Divider()
                             .padding(.horizontal, 50)
                             .padding(.top, 10)
@@ -353,8 +350,10 @@ struct DashboardView: View {
                 }
             }
         }
-        .navigationBarTitle("Dashboard", displayMode: .inline)
+        // Use an empty string for the title and hide the back button
+        .navigationBarTitle("", displayMode: .inline)
         .navigationBarBackButtonHidden(true)
+        .navigationBarHidden(false) // You can set true if you want to hide entire nav bar
         .onAppear {
             fetchData()
         }
@@ -406,7 +405,8 @@ struct DashboardView: View {
 // MARK: - Preview
 struct DashboardView_Previews: PreviewProvider {
     static var previews: some View {
-        DashboardView(username: globalUsername, className: globalClassName)
+        DashboardView(username: "SampleUser", className: "SampleClass")
     }
 }
+
 

@@ -436,7 +436,7 @@ struct ComprehensionSectionView: View {
             fetchQ1Audio()
             fetchQ2Audio()
         }
-        // This helps to dismiss the keyboard if the user scrolls or taps away
+        // This helps to dismiss the keyboard if the user scrolls or taps away (iOS 16+)
         .scrollDismissesKeyboard(.interactively)
     }
     
