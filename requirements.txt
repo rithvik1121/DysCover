@@ -1,0 +1,6 @@
+flask
+python-dotenv
+openai
+google-cloud-texttospeech
+elevenlabs
+tabulate
